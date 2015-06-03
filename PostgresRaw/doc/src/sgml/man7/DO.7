@@ -1,0 +1,93 @@
+'\" t
+.\"     Title: DO
+.\"    Author: The PostgreSQL Global Development Group
+.\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
+.\"      Date: 2010-09-16
+.\"    Manual: PostgreSQL 9.0.0 Documentation
+.\"    Source: PostgreSQL 9.0.0
+.\"  Language: English
+.\"
+.TH "DO" "7" "2010-09-16" "PostgreSQL 9.0.0" "PostgreSQL 9.0.0 Documentation"
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+DO \- execute an anonymous code block
+.\" DO
+.\" anonymous code blocks
+.SH "SYNOPSIS"
+.sp
+.nf
+DO [ LANGUAGE \fIlang_name\fR ] \fIcode\fR
+.fi
+.SH "DESCRIPTION"
+.PP
+DO
+executes an anonymous code block, or in other words a transient anonymous function in a procedural language\&.
+.PP
+The code block is treated as though it were the body of a function with no parameters, returning
+void\&. It is parsed and executed a single time\&.
+.PP
+The optional
+LANGUAGE
+clause can be written either before or after the code block\&.
+.SH "PARAMETERS"
+.PP
+\fIcode\fR
+.RS 4
+The procedural language code to be executed\&. This must be specified as a string literal, just as in
+CREATE FUNCTION\&. Use of a dollar\-quoted literal is recommended\&.
+.RE
+.PP
+\fIlang_name\fR
+.RS 4
+The name of the procedural language the code is written in\&. If omitted, the default is
+plpgsql\&.
+.RE
+.SH "NOTES"
+.PP
+The procedural language to be used must already have been installed into the current database by means of
+CREATE LANGUAGE\&.
+plpgsql
+is installed by default, but other languages are not\&.
+.PP
+The user must have
+USAGE
+privilege for the procedural language, or must be a superuser if the language is untrusted\&. This is the same privilege requirement as for creating a function in the language\&.
+.SH "EXAMPLES"
+.PP
+Grant all privileges on all views in schema
+public
+to role
+webuser:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+DO $$DECLARE r record;
+BEGIN
+    FOR r IN SELECT table_schema, table_name FROM information_schema\&.tables
+             WHERE table_type = \(aqVIEW\(aq AND table_schema = \(aqpublic\(aq
+    LOOP
+        EXECUTE \(aqGRANT ALL ON \(aq || quote_ident(r\&.table_schema) || \(aq\&.\(aq || quote_ident(r\&.table_name) || \(aq TO webuser\(aq;
+    END LOOP;
+END$$;
+.fi
+.if n \{\
+.RE
+.\}
+.SH "COMPATIBILITY"
+.PP
+There is no
+DO
+statement in the SQL standard\&.
+.SH "SEE ALSO"
+CREATE LANGUAGE (\fBCREATE_LANGUAGE\fR(7))

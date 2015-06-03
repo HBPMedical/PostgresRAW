@@ -1,0 +1,45 @@
+'\" t
+.\"     Title: SPI_getnspname
+.\"    Author: The PostgreSQL Global Development Group
+.\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
+.\"      Date: 2010-09-16
+.\"    Manual: PostgreSQL 9.0.0 Documentation
+.\"    Source: PostgreSQL 9.0.0
+.\"  Language: English
+.\"
+.TH "SPI_GETNSPNAME" "3" "2010-09-16" "PostgreSQL 9.0.0" "PostgreSQL 9.0.0 Documentation"
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+SPI_getnspname \- return the namespace of the specified relation
+.\" SPI_getnspname
+.SH "SYNOPSIS"
+.sp
+.nf
+char * SPI_getnspname(Relation \fIrel\fR)
+.fi
+.SH "DESCRIPTION"
+.PP
+\fBSPI_getnspname\fR
+returns a copy of the name of the namespace that the specified
+Relation
+belongs to\&. This is equivalent to the relation\(aqs schema\&. You should
+\fBpfree\fR
+the return value of this function when you are finished with it\&.
+.SH "ARGUMENTS"
+.PP
+Relation \fIrel\fR
+.RS 4
+input relation
+.RE
+.SH "RETURN VALUE"
+.PP
+The name of the specified relation\(aqs namespace\&.

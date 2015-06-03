@@ -1,0 +1,66 @@
+'\" t
+.\"     Title: CREATE USER
+.\"    Author: The PostgreSQL Global Development Group
+.\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
+.\"      Date: 2010-09-16
+.\"    Manual: PostgreSQL 9.0.0 Documentation
+.\"    Source: PostgreSQL 9.0.0
+.\"  Language: English
+.\"
+.TH "CREATE USER" "7" "2010-09-16" "PostgreSQL 9.0.0" "PostgreSQL 9.0.0 Documentation"
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+CREATE_USER \- define a new database role
+.\" CREATE USER
+.SH "SYNOPSIS"
+.sp
+.nf
+CREATE USER \fIname\fR [ [ WITH ] \fIoption\fR [ \&.\&.\&. ] ]
+
+where \fIoption\fR can be:
+    
+      SUPERUSER | NOSUPERUSER
+    | CREATEDB | NOCREATEDB
+    | CREATEROLE | NOCREATEROLE
+    | CREATEUSER | NOCREATEUSER
+    | INHERIT | NOINHERIT
+    | LOGIN | NOLOGIN
+    | CONNECTION LIMIT \fIconnlimit\fR
+    | [ ENCRYPTED | UNENCRYPTED ] PASSWORD \(aq\fIpassword\fR\(aq
+    | VALID UNTIL \(aq\fItimestamp\fR\(aq 
+    | IN ROLE \fIrole_name\fR [, \&.\&.\&.]
+    | IN GROUP \fIrole_name\fR [, \&.\&.\&.]
+    | ROLE \fIrole_name\fR [, \&.\&.\&.]
+    | ADMIN \fIrole_name\fR [, \&.\&.\&.]
+    | USER \fIrole_name\fR [, \&.\&.\&.]
+    | SYSID \fIuid\fR 
+.fi
+.SH "DESCRIPTION"
+.PP
+CREATE USER
+is now an alias for
+CREATE ROLE (\fBCREATE_ROLE\fR(7))\&. The only difference is that when the command is spelled
+CREATE USER,
+LOGIN
+is assumed by default, whereas
+NOLOGIN
+is assumed when the command is spelled
+CREATE ROLE\&.
+.SH "COMPATIBILITY"
+.PP
+The
+CREATE USER
+statement is a
+PostgreSQL
+extension\&. The SQL standard leaves the definition of users to the implementation\&.
+.SH "SEE ALSO"
+CREATE ROLE (\fBCREATE_ROLE\fR(7))

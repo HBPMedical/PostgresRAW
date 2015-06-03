@@ -1,0 +1,216 @@
+'\" t
+.\"     Title: TRUNCATE
+.\"    Author: The PostgreSQL Global Development Group
+.\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
+.\"      Date: 2010-09-16
+.\"    Manual: PostgreSQL 9.0.0 Documentation
+.\"    Source: PostgreSQL 9.0.0
+.\"  Language: English
+.\"
+.TH "TRUNCATE" "7" "2010-09-16" "PostgreSQL 9.0.0" "PostgreSQL 9.0.0 Documentation"
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+TRUNCATE \- empty a table or set of tables
+.\" TRUNCATE
+.SH "SYNOPSIS"
+.sp
+.nf
+TRUNCATE [ TABLE ] [ ONLY ] \fIname\fR [, \&.\&.\&. ]
+    [ RESTART IDENTITY | CONTINUE IDENTITY ] [ CASCADE | RESTRICT ]
+.fi
+.SH "DESCRIPTION"
+.PP
+TRUNCATE
+quickly removes all rows from a set of tables\&. It has the same effect as an unqualified
+DELETE
+on each table, but since it does not actually scan the tables it is faster\&. Furthermore, it reclaims disk space immediately, rather than requiring a subsequent
+VACUUM
+operation\&. This is most useful on large tables\&.
+.SH "PARAMETERS"
+.PP
+\fIname\fR
+.RS 4
+The name (optionally schema\-qualified) of a table to be truncated\&. If
+ONLY
+is specified, only that table is truncated\&. If
+ONLY
+is not specified, the table and all its descendant tables (if any) are truncated\&.
+.RE
+.PP
+RESTART IDENTITY
+.RS 4
+Automatically restart sequences owned by columns of the truncated table(s)\&.
+.RE
+.PP
+CONTINUE IDENTITY
+.RS 4
+Do not change the values of sequences\&. This is the default\&.
+.RE
+.PP
+CASCADE
+.RS 4
+Automatically truncate all tables that have foreign\-key references to any of the named tables, or to any tables added to the group due to
+CASCADE\&.
+.RE
+.PP
+RESTRICT
+.RS 4
+Refuse to truncate if any of the tables have foreign\-key references from tables that are not listed in the command\&. This is the default\&.
+.RE
+.SH "NOTES"
+.PP
+You must have the
+TRUNCATE
+privilege on a table to truncate it\&.
+.PP
+TRUNCATE
+acquires an
+ACCESS EXCLUSIVE
+lock on each table it operates on, which blocks all other concurrent operations on the table\&. If concurrent access to a table is required, then the
+DELETE
+command should be used instead\&.
+.PP
+TRUNCATE
+cannot be used on a table that has foreign\-key references from other tables, unless all such tables are also truncated in the same command\&. Checking validity in such cases would require table scans, and the whole point is not to do one\&. The
+CASCADE
+option can be used to automatically include all dependent tables \(em but be very careful when using this option, or else you might lose data you did not intend to!
+.PP
+TRUNCATE
+will not fire any
+ON DELETE
+triggers that might exist for the tables\&. But it will fire
+ON TRUNCATE
+triggers\&. If
+ON TRUNCATE
+triggers are defined for any of the tables, then all
+BEFORE TRUNCATE
+triggers are fired before any truncation happens, and all
+AFTER TRUNCATE
+triggers are fired after the last truncation is performed\&. The triggers will fire in the order that the tables are to be processed (first those listed in the command, and then any that were added due to cascading)\&.
+.if n \{\
+.sp
+.\}
+.RS 4
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBWarning\fR
+.ps -1
+.br
+.PP
+TRUNCATE
+is not MVCC\-safe (see
+Chapter 13, Concurrency Control, in the documentation
+for general information about MVCC)\&. After truncation, the table will appear empty to all concurrent transactions, even if they are using a snapshot taken before the truncation occurred\&. This will only be an issue for a transaction that did not access the truncated table before the truncation happened \(em any transaction that has done so would hold at least an
+ACCESS SHARE
+lock, which would block
+TRUNCATE
+until that transaction completes\&. So truncation will not cause any apparent inconsistency in the table contents for successive queries on the same table, but it could cause visible inconsistency between the contents of the truncated table and other tables in the database\&.
+.sp .5v
+.RE
+.PP
+TRUNCATE
+is transaction\-safe with respect to the data in the tables: the truncation will be safely rolled back if the surrounding transaction does not commit\&.
+.if n \{\
+.sp
+.\}
+.RS 4
+.it 1 an-trap
+.nr an-no-space-flag 1
+.nr an-break-flag 1
+.br
+.ps +1
+\fBWarning\fR
+.ps -1
+.br
+.PP
+Any
+ALTER SEQUENCE RESTART
+operations performed as a consequence of using the
+RESTART IDENTITY
+option are nontransactional and will not be rolled back on failure\&. To minimize the risk, these operations are performed only after all the rest of
+TRUNCATE\(aqs work is done\&. However, there is still a risk if
+TRUNCATE
+is performed inside a transaction block that is aborted afterwards\&. For example, consider
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+BEGIN;
+TRUNCATE TABLE foo RESTART IDENTITY;
+COPY foo FROM \&.\&.\&.;
+COMMIT;
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+If the
+COPY
+fails partway through, the table data rolls back correctly, but the sequences will be left with values that are probably smaller than they had before, possibly leading to duplicate\-key failures or other problems in later transactions\&. If this is likely to be a problem, it\(aqs best to avoid using
+RESTART IDENTITY, and accept that the new contents of the table will have higher serial numbers than the old\&.
+.sp .5v
+.RE
+.SH "EXAMPLES"
+.PP
+Truncate the tables
+bigtable
+and
+fattable:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+TRUNCATE bigtable, fattable;
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+The same, and also reset any associated sequence generators:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+TRUNCATE bigtable, fattable RESTART IDENTITY;
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Truncate the table
+othertable, and cascade to any tables that reference
+othertable
+via foreign\-key constraints:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+TRUNCATE othertable CASCADE;
+.fi
+.if n \{\
+.RE
+.\}
+.SH "COMPATIBILITY"
+.PP
+The SQL:2008 standard includes a
+TRUNCATE
+command with the syntax
+TRUNCATE TABLE \fItablename\fR\&. The clauses
+CONTINUE IDENTITY/RESTART IDENTITY
+also appear in that standard but have slightly different but related meanings\&. Some of the concurrency behavior of this command is left implementation\-defined by the standard, so the above notes should be considered and compared with other implementations if necessary\&.

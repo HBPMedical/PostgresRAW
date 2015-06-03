@@ -1,0 +1,54 @@
+'\" t
+.\"     Title: CHECKPOINT
+.\"    Author: The PostgreSQL Global Development Group
+.\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
+.\"      Date: 2010-09-16
+.\"    Manual: PostgreSQL 9.0.0 Documentation
+.\"    Source: PostgreSQL 9.0.0
+.\"  Language: English
+.\"
+.TH "CHECKPOINT" "7" "2010-09-16" "PostgreSQL 9.0.0" "PostgreSQL 9.0.0 Documentation"
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+CHECKPOINT \- force a transaction log checkpoint
+.\" CHECKPOINT
+.SH "SYNOPSIS"
+.sp
+.nf
+CHECKPOINT
+.fi
+.SH "DESCRIPTION"
+.PP
+Write\-Ahead Logging (WAL) puts a checkpoint in the transaction log every so often\&. (To adjust the automatic checkpoint interval, see the run\-time configuration options
+checkpoint_segments
+and
+checkpoint_timeout\&.) The
+CHECKPOINT
+command forces an immediate checkpoint when the command is issued, without waiting for a scheduled checkpoint\&.
+.PP
+A checkpoint is a point in the transaction log sequence at which all data files have been updated to reflect the information in the log\&. All data files will be flushed to disk\&. Refer to
+Chapter 29, Reliability and the Write-Ahead Log, in the documentation
+for more information about the WAL system\&.
+.PP
+If executed during recovery, the
+CHECKPOINT
+command will force a restartpoint rather than writing a new checkpoint\&.
+.PP
+Only superusers can call
+CHECKPOINT\&. The command is not intended for use during normal operation\&.
+.SH "COMPATIBILITY"
+.PP
+The
+CHECKPOINT
+command is a
+PostgreSQL
+language extension\&.

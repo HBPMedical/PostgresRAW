@@ -1,0 +1,235 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<HTML
+><HEAD
+><TITLE
+>Getting The Source Via rsync</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.79"><LINK
+REV="MADE"
+HREF="mailto:pgsql-docs@postgresql.org"><LINK
+REL="HOME"
+TITLE="PostgreSQL 9.0.0 Documentation"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="The Source Code Repository"
+HREF="cvs.html"><LINK
+REL="PREVIOUS"
+TITLE="Getting The Source Via Anonymous CVS"
+HREF="anoncvs.html"><LINK
+REL="NEXT"
+TITLE="Documentation"
+HREF="docguide.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="stylesheet.css"><META
+HTTP-EQUIV="Content-Type"
+CONTENT="text/html; charset=ISO-8859-1"><META
+NAME="creation"
+CONTENT="2010-09-17T01:31:37"></HEAD
+><BODY
+CLASS="SECT1"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="5"
+ALIGN="center"
+VALIGN="bottom"
+><A
+HREF="index.html"
+>PostgreSQL 9.0.0 Documentation</A
+></TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="top"
+><A
+TITLE="Getting The Source Via Anonymous CVS"
+HREF="anoncvs.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="top"
+><A
+TITLE="The Source Code Repository"
+HREF="cvs.html"
+>Fast Backward</A
+></TD
+><TD
+WIDTH="60%"
+ALIGN="center"
+VALIGN="bottom"
+>Appendix H. The Source Code Repository</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="top"
+><A
+TITLE="The Source Code Repository"
+HREF="cvs.html"
+>Fast Forward</A
+></TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="top"
+><A
+TITLE="Documentation"
+HREF="docguide.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="RSYNC"
+>H.3. Getting The Source Via <SPAN
+CLASS="PRODUCTNAME"
+>rsync</SPAN
+></A
+></H1
+><P
+>   An alternative to using anonymous CVS for retrieving the
+   <SPAN
+CLASS="PRODUCTNAME"
+>PostgreSQL</SPAN
+> source tree is
+   <SPAN
+CLASS="PRODUCTNAME"
+>rsync</SPAN
+>, an incremental file transfer tool.
+   A major advantage to using <SPAN
+CLASS="PRODUCTNAME"
+>rsync</SPAN
+> instead of
+   plain <SPAN
+CLASS="PRODUCTNAME"
+>cvs</SPAN
+> is that it
+   can reliably replicate the <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>entire</I
+></SPAN
+> CVS repository
+   on your local system, allowing fast local access to <TT
+CLASS="COMMAND"
+>cvs</TT
+>
+   operations such as <TT
+CLASS="OPTION"
+>log</TT
+> and <TT
+CLASS="OPTION"
+>diff</TT
+>.
+   Other advantages include fast synchronization to the
+   <SPAN
+CLASS="PRODUCTNAME"
+>PostgreSQL</SPAN
+> server due to an efficient
+   streaming transfer protocol which only sends the changes since the last
+   update.
+  </P
+><P
+>   You can download the CVS repository using this command:
+</P><PRE
+CLASS="PROGRAMLISTING"
+>rsync -avzH --delete anoncvs.postgresql.org::pgsql-cvs cvsroot/</PRE
+><P>
+   For full instructions, see the "rsync" section in the 
+   <A
+HREF="http://pgfoundry.org/docman/view.php/1000040/4/PGBuildFarm-HOWTO.txt"
+TARGET="_top"
+>   PostgreSQL Build Farm instructions</A
+>.
+  </P
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="anoncvs.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="docguide.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Getting The Source Via Anonymous <SPAN
+CLASS="PRODUCTNAME"
+>CVS</SPAN
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="cvs.html"
+ACCESSKEY="U"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Documentation</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

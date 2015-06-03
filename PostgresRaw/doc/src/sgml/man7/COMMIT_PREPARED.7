@@ -1,0 +1,63 @@
+'\" t
+.\"     Title: COMMIT PREPARED
+.\"    Author: The PostgreSQL Global Development Group
+.\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
+.\"      Date: 2010-09-16
+.\"    Manual: PostgreSQL 9.0.0 Documentation
+.\"    Source: PostgreSQL 9.0.0
+.\"  Language: English
+.\"
+.TH "COMMIT PREPARED" "7" "2010-09-16" "PostgreSQL 9.0.0" "PostgreSQL 9.0.0 Documentation"
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+COMMIT_PREPARED \- commit a transaction that was earlier prepared for two\-phase commit
+.\" COMMIT PREPARED
+.SH "SYNOPSIS"
+.sp
+.nf
+COMMIT PREPARED \fItransaction_id\fR
+.fi
+.SH "DESCRIPTION"
+.PP
+COMMIT PREPARED
+commits a transaction that is in prepared state\&.
+.SH "PARAMETERS"
+.PP
+\fItransaction_id\fR
+.RS 4
+The transaction identifier of the transaction that is to be committed\&.
+.RE
+.SH "NOTES"
+.PP
+To commit a prepared transaction, you must be either the same user that executed the transaction originally, or a superuser\&. But you do not have to be in the same session that executed the transaction\&.
+.PP
+This command cannot be executed inside a transaction block\&. The prepared transaction is committed immediately\&.
+.PP
+All currently available prepared transactions are listed in the
+pg_prepared_xacts
+system view\&.
+.SH "EXAMPLES"
+.PP
+Commit the transaction identified by the transaction identifier
+foobar:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+COMMIT PREPARED \(aqfoobar\(aq;
+.fi
+.if n \{\
+.RE
+.\}
+.SH "SEE ALSO"
+PREPARE TRANSACTION (\fBPREPARE_TRANSACTION\fR(7)), ROLLBACK PREPARED (\fBROLLBACK_PREPARED\fR(7))

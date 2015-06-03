@@ -1,0 +1,75 @@
+'\" t
+.\"     Title: DROP INDEX
+.\"    Author: The PostgreSQL Global Development Group
+.\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
+.\"      Date: 2010-09-16
+.\"    Manual: PostgreSQL 9.0.0 Documentation
+.\"    Source: PostgreSQL 9.0.0
+.\"  Language: English
+.\"
+.TH "DROP INDEX" "7" "2010-09-16" "PostgreSQL 9.0.0" "PostgreSQL 9.0.0 Documentation"
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+DROP_INDEX \- remove an index
+.\" DROP INDEX
+.SH "SYNOPSIS"
+.sp
+.nf
+DROP INDEX [ IF EXISTS ] \fIname\fR [, \&.\&.\&.] [ CASCADE | RESTRICT ]
+.fi
+.SH "DESCRIPTION"
+.PP
+DROP INDEX
+drops an existing index from the database system\&. To execute this command you must be the owner of the index\&.
+.SH "PARAMETERS"
+.PP
+IF EXISTS
+.RS 4
+Do not throw an error if the index does not exist\&. A notice is issued in this case\&.
+.RE
+.PP
+\fIname\fR
+.RS 4
+The name (optionally schema\-qualified) of an index to remove\&.
+.RE
+.PP
+CASCADE
+.RS 4
+Automatically drop objects that depend on the index\&.
+.RE
+.PP
+RESTRICT
+.RS 4
+Refuse to drop the index if any objects depend on it\&. This is the default\&.
+.RE
+.SH "EXAMPLES"
+.PP
+This command will remove the index
+title_idx:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+DROP INDEX title_idx;
+.fi
+.if n \{\
+.RE
+.\}
+.SH "COMPATIBILITY"
+.PP
+DROP INDEX
+is a
+PostgreSQL
+language extension\&. There are no provisions for indexes in the SQL standard\&.
+.SH "SEE ALSO"
+CREATE INDEX (\fBCREATE_INDEX\fR(7))

@@ -1,0 +1,110 @@
+'\" t
+.\"     Title: CREATE TABLESPACE
+.\"    Author: The PostgreSQL Global Development Group
+.\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
+.\"      Date: 2010-09-16
+.\"    Manual: PostgreSQL 9.0.0 Documentation
+.\"    Source: PostgreSQL 9.0.0
+.\"  Language: English
+.\"
+.TH "CREATE TABLESPACE" "7" "2010-09-16" "PostgreSQL 9.0.0" "PostgreSQL 9.0.0 Documentation"
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+CREATE_TABLESPACE \- define a new tablespace
+.\" CREATE TABLESPACE
+.SH "SYNOPSIS"
+.sp
+.nf
+CREATE TABLESPACE \fItablespace_name\fR [ OWNER \fIuser_name\fR ] LOCATION \(aq\fIdirectory\fR\(aq
+.fi
+.SH "DESCRIPTION"
+.PP
+CREATE TABLESPACE
+registers a new cluster\-wide tablespace\&. The tablespace name must be distinct from the name of any existing tablespace in the database cluster\&.
+.PP
+A tablespace allows superusers to define an alternative location on the file system where the data files containing database objects (such as tables and indexes) can reside\&.
+.PP
+A user with appropriate privileges can pass
+\fItablespace_name\fR
+to
+CREATE DATABASE,
+CREATE TABLE,
+CREATE INDEX
+or
+ADD CONSTRAINT
+to have the data files for these objects stored within the specified tablespace\&.
+.SH "PARAMETERS"
+.PP
+\fItablespace_name\fR
+.RS 4
+The name of a tablespace to be created\&. The name cannot begin with
+pg_, as such names are reserved for system tablespaces\&.
+.RE
+.PP
+\fIuser_name\fR
+.RS 4
+The name of the user who will own the tablespace\&. If omitted, defaults to the user executing the command\&. Only superusers can create tablespaces, but they can assign ownership of tablespaces to non\-superusers\&.
+.RE
+.PP
+\fIdirectory\fR
+.RS 4
+The directory that will be used for the tablespace\&. The directory must be empty and must be owned by the
+PostgreSQL
+system user\&. The directory must be specified by an absolute path name\&.
+.RE
+.SH "NOTES"
+.PP
+Tablespaces are only supported on systems that support symbolic links\&.
+.PP
+CREATE TABLESPACE
+cannot be executed inside a transaction block\&.
+.SH "EXAMPLES"
+.PP
+Create a tablespace
+dbspace
+at
+/data/dbs:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+CREATE TABLESPACE dbspace LOCATION \(aq/data/dbs\(aq;
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Create a tablespace
+indexspace
+at
+/data/indexes
+owned by user
+genevieve:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+CREATE TABLESPACE indexspace OWNER genevieve LOCATION \(aq/data/indexes\(aq;
+.fi
+.if n \{\
+.RE
+.\}
+.SH "COMPATIBILITY"
+.PP
+CREATE TABLESPACE
+is a
+PostgreSQL
+extension\&.
+.SH "SEE ALSO"
+CREATE DATABASE (\fBCREATE_DATABASE\fR(7)), CREATE TABLE (\fBCREATE_TABLE\fR(7)), CREATE INDEX (\fBCREATE_INDEX\fR(7)), DROP TABLESPACE (\fBDROP_TABLESPACE\fR(7)), ALTER TABLESPACE (\fBALTER_TABLESPACE\fR(7))

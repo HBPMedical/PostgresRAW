@@ -1,0 +1,208 @@
+'\" t
+.\"     Title: reindexdb
+.\"    Author: The PostgreSQL Global Development Group
+.\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
+.\"      Date: 2010-09-16
+.\"    Manual: PostgreSQL 9.0.0 Documentation
+.\"    Source: PostgreSQL 9.0.0
+.\"  Language: English
+.\"
+.TH "REINDEXDB" "1" "2010-09-16" "PostgreSQL 9.0.0" "PostgreSQL 9.0.0 Documentation"
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+reindexdb \- reindex a PostgreSQL database
+.\" reindexdb
+.SH "SYNOPSIS"
+.HP \w'reindexdbreindexdbreindexdb\ 'u
+reindexdb [\fIconnection\-option\fR...] [\-\-table\ |\ \-t\ \fItable\fR] [\-\-index\ |\ \-i\ \fIindex\fR] [\fIdbname\fR]
+.br
+reindexdb [\fIconnection\-option\fR...] [\-\-all\ |\ \-a]
+.br
+reindexdb [\fIconnection\-option\fR...] [\-\-system\ |\ \-s] [\fIdbname\fR]
+.SH "DESCRIPTION"
+.PP
+reindexdb
+is a utility for rebuilding indexes in a
+PostgreSQL
+database\&.
+.PP
+reindexdb
+is a wrapper around the SQL command
+\fBREINDEX\fR(7)\&. There is no effective difference between reindexing databases via this utility and via other methods for accessing the server\&.
+.SH "OPTIONS"
+.PP
+reindexdb
+accepts the following command\-line arguments:
+.PP
+\fB\-a\fR, \fB\-\-all\fR
+.RS 4
+Reindex all databases\&.
+.RE
+.PP
+\fB[\-d]\fR\fB \fR\fB\fIdbname\fR\fR, \fB[\-\-dbname]\fR\fB \fR\fB\fIdbname\fR\fR
+.RS 4
+Specifies the name of the database to be reindexed\&. If this is not specified and
+\fB\-a\fR
+(or
+\fB\-\-all\fR) is not used, the database name is read from the environment variable
+\fBPGDATABASE\fR\&. If that is not set, the user name specified for the connection is used\&.
+.RE
+.PP
+\fB\-e\fR, \fB\-\-echo\fR
+.RS 4
+Echo the commands that
+reindexdb
+generates and sends to the server\&.
+.RE
+.PP
+\fB\-i \fR\fB\fIindex\fR\fR, \fB\-\-index \fR\fB\fIindex\fR\fR
+.RS 4
+Recreate
+\fIindex\fR
+only\&.
+.RE
+.PP
+\fB\-q\fR, \fB\-\-quiet\fR
+.RS 4
+Do not display progress messages\&.
+.RE
+.PP
+\fB\-s\fR, \fB\-\-system\fR
+.RS 4
+Reindex database\(aqs system catalogs\&.
+.RE
+.PP
+\fB\-t \fR\fB\fItable\fR\fR, \fB\-\-table \fR\fB\fItable\fR\fR
+.RS 4
+Reindex
+\fItable\fR
+only\&.
+.RE
+.PP
+\fB\-V\fR, \fB\-\-version\fR
+.RS 4
+Print the
+reindexdb
+version and exit\&.
+.RE
+.PP
+\fB\-?\fR, \fB\-\-help\fR
+.RS 4
+Show help about
+reindexdb
+command line arguments, and exit\&.
+.RE
+.PP
+reindexdb
+also accepts the following command\-line arguments for connection parameters:
+.PP
+\fB\-h \fR\fB\fIhost\fR\fR, \fB\-\-host \fR\fB\fIhost\fR\fR
+.RS 4
+Specifies the host name of the machine on which the server is running\&. If the value begins with a slash, it is used as the directory for the Unix domain socket\&.
+.RE
+.PP
+\fB\-p \fR\fB\fIport\fR\fR, \fB\-\-port \fR\fB\fIport\fR\fR
+.RS 4
+Specifies the TCP port or local Unix domain socket file extension on which the server is listening for connections\&.
+.RE
+.PP
+\fB\-U \fR\fB\fIusername\fR\fR, \fB\-\-username \fR\fB\fIusername\fR\fR
+.RS 4
+User name to connect as\&.
+.RE
+.PP
+\fB\-w\fR, \fB\-\-no\-password\fR
+.RS 4
+Never issue a password prompt\&. If the server requires password authentication and a password is not available by other means such as a
+\&.pgpass
+file, the connection attempt will fail\&. This option can be useful in batch jobs and scripts where no user is present to enter a password\&.
+.RE
+.PP
+\fB\-W\fR, \fB\-\-password\fR
+.RS 4
+Force
+reindexdb
+to prompt for a password before connecting to a database\&.
+.sp
+This option is never essential, since
+reindexdb
+will automatically prompt for a password if the server demands password authentication\&. However,
+reindexdb
+will waste a connection attempt finding out that the server wants a password\&. In some cases it is worth typing
+\fB\-W\fR
+to avoid the extra connection attempt\&.
+.RE
+.SH "ENVIRONMENT"
+.PP
+\fBPGDATABASE\fR, \fBPGHOST\fR, \fBPGPORT\fR, \fBPGUSER\fR
+.RS 4
+Default connection parameters
+.RE
+.PP
+This utility, like most other
+PostgreSQL
+utilities, also uses the environment variables supported by
+libpq
+(see
+Section 31.13, \(lqEnvironment Variables\(rq, in the documentation)\&.
+.SH "DIAGNOSTICS"
+.PP
+In case of difficulty, see
+\fBREINDEX\fR(7)
+and
+\fBpsql\fR(1)
+for discussions of potential problems and error messages\&. The database server must be running at the targeted host\&. Also, any default connection settings and environment variables used by the
+libpq
+front\-end library will apply\&.
+.SH "NOTES"
+.PP
+reindexdb
+might need to connect several times to the
+PostgreSQL
+server, asking for a password each time\&. It is convenient to have a
+~/\&.pgpass
+file in such cases\&. See
+Section 31.14, \(lqThe Password File\(rq, in the documentation
+for more information\&.
+.SH "EXAMPLES"
+.PP
+To reindex the database
+test:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+$ \fBreindexdb test\fR
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+To reindex the table
+foo
+and the index
+bar
+in a database named
+abcd:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+$ \fBreindexdb \-\-table foo \-\-index bar abcd\fR
+.fi
+.if n \{\
+.RE
+.\}
+.SH "SEE ALSO"
+\fBREINDEX\fR(7)

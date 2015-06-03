@@ -1,0 +1,96 @@
+'\" t
+.\"     Title: SPI_prepare
+.\"    Author: The PostgreSQL Global Development Group
+.\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
+.\"      Date: 2010-09-16
+.\"    Manual: PostgreSQL 9.0.0 Documentation
+.\"    Source: PostgreSQL 9.0.0
+.\"  Language: English
+.\"
+.TH "SPI_PREPARE" "3" "2010-09-16" "PostgreSQL 9.0.0" "PostgreSQL 9.0.0 Documentation"
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+SPI_prepare \- prepare a plan for a command, without executing it yet
+.\" SPI_prepare
+.SH "SYNOPSIS"
+.sp
+.nf
+SPIPlanPtr SPI_prepare(const char * \fIcommand\fR, int \fInargs\fR, Oid * \fIargtypes\fR)
+.fi
+.SH "DESCRIPTION"
+.PP
+\fBSPI_prepare\fR
+creates and returns an execution plan for the specified command, but doesn\(aqt execute the command\&. This function should only be called from a connected procedure\&.
+.PP
+When the same or a similar command is to be executed repeatedly, it might be advantageous to perform the planning only once\&.
+\fBSPI_prepare\fR
+converts a command string into an execution plan that can be executed repeatedly using
+\fBSPI_execute_plan\fR\&.
+.PP
+A prepared command can be generalized by writing parameters ($1,
+$2, etc\&.) in place of what would be constants in a normal command\&. The actual values of the parameters are then specified when
+\fBSPI_execute_plan\fR
+is called\&. This allows the prepared command to be used over a wider range of situations than would be possible without parameters\&.
+.PP
+The plan returned by
+\fBSPI_prepare\fR
+can be used only in the current invocation of the procedure, since
+\fBSPI_finish\fR
+frees memory allocated for a plan\&. But a plan can be saved for longer using the function
+\fBSPI_saveplan\fR\&.
+.SH "ARGUMENTS"
+.PP
+const char * \fIcommand\fR
+.RS 4
+command string
+.RE
+.PP
+int \fInargs\fR
+.RS 4
+number of input parameters ($1,
+$2, etc\&.)
+.RE
+.PP
+Oid * \fIargtypes\fR
+.RS 4
+pointer to an array containing the
+OIDs of the data types of the parameters
+.RE
+.SH "RETURN VALUE"
+.PP
+\fBSPI_prepare\fR
+returns a non\-null pointer to an execution plan\&. On error,
+NULL
+will be returned, and
+\fISPI_result\fR
+will be set to one of the same error codes used by
+\fBSPI_execute\fR, except that it is set to
+SPI_ERROR_ARGUMENT
+if
+\fIcommand\fR
+is
+NULL, or if
+\fInargs\fR
+is less than 0, or if
+\fInargs\fR
+is greater than 0 and
+\fIargtypes\fR
+is
+NULL\&.
+.SH "NOTES"
+.PP
+SPIPlanPtr
+is declared as a pointer to an opaque struct type in
+spi\&.h\&. It is unwise to try to access its contents directly, as that makes your code much more likely to break in future revisions of
+PostgreSQL\&.
+.PP
+There is a disadvantage to using parameters: since the planner does not know the values that will be supplied for the parameters, it might make worse planning choices than it would make for a normal command with all constants visible\&.

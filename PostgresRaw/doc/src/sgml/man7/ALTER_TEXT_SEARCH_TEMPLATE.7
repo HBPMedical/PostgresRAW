@@ -1,0 +1,53 @@
+'\" t
+.\"     Title: ALTER TEXT SEARCH TEMPLATE
+.\"    Author: The PostgreSQL Global Development Group
+.\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
+.\"      Date: 2010-09-16
+.\"    Manual: PostgreSQL 9.0.0 Documentation
+.\"    Source: PostgreSQL 9.0.0
+.\"  Language: English
+.\"
+.TH "ALTER TEXT SEARCH TEMPLATE" "7" "2010-09-16" "PostgreSQL 9.0.0" "PostgreSQL 9.0.0 Documentation"
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+ALTER_TEXT_SEARCH_TEMPLATE \- change the definition of a text search template
+.\" ALTER TEXT SEARCH TEMPLATE
+.SH "SYNOPSIS"
+.sp
+.nf
+ALTER TEXT SEARCH TEMPLATE \fIname\fR RENAME TO \fInew_name\fR
+.fi
+.SH "DESCRIPTION"
+.PP
+ALTER TEXT SEARCH TEMPLATE
+changes the definition of a text search template\&. Currently, the only supported functionality is to change the template\(aqs name\&.
+.PP
+You must be a superuser to use
+ALTER TEXT SEARCH TEMPLATE\&.
+.SH "PARAMETERS"
+.PP
+\fIname\fR
+.RS 4
+The name (optionally schema\-qualified) of an existing text search template\&.
+.RE
+.PP
+\fInew_name\fR
+.RS 4
+The new name of the text search template\&.
+.RE
+.SH "COMPATIBILITY"
+.PP
+There is no
+ALTER TEXT SEARCH TEMPLATE
+statement in the SQL standard\&.
+.SH "SEE ALSO"
+CREATE TEXT SEARCH TEMPLATE (\fBCREATE_TEXT_SEARCH_TEMPLATE\fR(7)), DROP TEXT SEARCH TEMPLATE (\fBDROP_TEXT_SEARCH_TEMPLATE\fR(7))

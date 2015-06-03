@@ -1,0 +1,100 @@
+'\" t
+.\"     Title: MOVE
+.\"    Author: The PostgreSQL Global Development Group
+.\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
+.\"      Date: 2010-09-16
+.\"    Manual: PostgreSQL 9.0.0 Documentation
+.\"    Source: PostgreSQL 9.0.0
+.\"  Language: English
+.\"
+.TH "MOVE" "7" "2010-09-16" "PostgreSQL 9.0.0" "PostgreSQL 9.0.0 Documentation"
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+MOVE \- position a cursor
+.\" MOVE
+.\" cursor: MOVE
+.SH "SYNOPSIS"
+.sp
+.nf
+MOVE [ \fIdirection\fR [ FROM | IN ] ] \fIcursor_name\fR
+.fi
+.SH "DESCRIPTION"
+.PP
+MOVE
+repositions a cursor without retrieving any data\&.
+MOVE
+works exactly like the
+FETCH
+command, except it only positions the cursor and does not return rows\&.
+.PP
+The parameters for the
+MOVE
+command are identical to those of the
+FETCH
+command; refer to
+\fBFETCH\fR(7)
+for details on syntax and usage\&.
+.SH "OUTPUTS"
+.PP
+On successful completion, a
+MOVE
+command returns a command tag of the form
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+MOVE \fIcount\fR
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+The
+\fIcount\fR
+is the number of rows that a
+FETCH
+command with the same parameters would have returned (possibly zero)\&.
+.SH "EXAMPLES"
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+BEGIN WORK;
+DECLARE liahona CURSOR FOR SELECT * FROM films;
+
+\-\- Skip the first 5 rows:
+MOVE FORWARD 5 IN liahona;
+MOVE 5
+
+\-\- Fetch the 6th row from the cursor liahona:
+FETCH 1 FROM liahona;
+ code  | title  | did | date_prod  |  kind  |  len
+\-\-\-\-\-\-\-+\-\-\-\-\-\-\-\-+\-\-\-\-\-+\-\-\-\-\-\-\-\-\-\-\-\-+\-\-\-\-\-\-\-\-+\-\-\-\-\-\-\-
+ P_303 | 48 Hrs | 103 | 1982\-10\-22 | Action | 01:37
+(1 row)
+
+\-\- Close the cursor liahona and end the transaction:
+CLOSE liahona;
+COMMIT WORK;
+.fi
+.if n \{\
+.RE
+.\}
+.SH "COMPATIBILITY"
+.PP
+There is no
+MOVE
+statement in the SQL standard\&.
+.SH "SEE ALSO"
+\fBCLOSE\fR(7), \fBDECLARE\fR(7), \fBFETCH\fR(7)

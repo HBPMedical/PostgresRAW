@@ -1,0 +1,124 @@
+'\" t
+.\"     Title: dblink_get_result
+.\"    Author: The PostgreSQL Global Development Group
+.\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
+.\"      Date: 2010-09-16
+.\"    Manual: PostgreSQL 9.0.0 Documentation
+.\"    Source: PostgreSQL 9.0.0
+.\"  Language: English
+.\"
+.TH "DBLINK_GET_RESULT" "3" "2010-09-16" "PostgreSQL 9.0.0" "PostgreSQL 9.0.0 Documentation"
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+dblink_get_result \- gets an async query result
+.SH "SYNOPSIS"
+.sp
+.nf
+dblink_get_result(text connname [, bool fail_on_error]) returns setof record
+.fi
+.SH "DESCRIPTION"
+.PP
+\fBdblink_get_result\fR
+collects the results of an asynchronous query previously sent with
+\fBdblink_send_query\fR\&. If the query is not already completed,
+\fBdblink_get_result\fR
+will wait until it is\&.
+.SH "ARGUMENTS"
+.PP
+\fIconname\fR
+.RS 4
+Name of the connection to use\&.
+.RE
+.PP
+\fIfail_on_error\fR
+.RS 4
+If true (the default when omitted) then an error thrown on the remote side of the connection causes an error to also be thrown locally\&. If false, the remote error is locally reported as a NOTICE, and the function returns no rows\&.
+.RE
+.SH "RETURN VALUE"
+.PP
+For an async query (that is, a SQL statement returning rows), the function returns the row(s) produced by the query\&. To use this function, you will need to specify the expected set of columns, as previously discussed for
+\fBdblink\fR\&.
+.PP
+For an async command (that is, a SQL statement not returning rows), the function returns a single row with a single text column containing the command\(aqs status string\&. It is still necessary to specify that the result will have a single text column in the calling
+FROM
+clause\&.
+.SH "NOTES"
+.PP
+This function
+\fImust\fR
+be called if
+\fBdblink_send_query\fR
+returned 1\&. It must be called once for each query sent, and one additional time to obtain an empty set result, before the connection can be used again\&.
+.SH "EXAMPLE"
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+contrib_regression=# SELECT dblink_connect(\(aqdtest1\(aq, \(aqdbname=contrib_regression\(aq);
+ dblink_connect
+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-
+ OK
+(1 row)
+
+contrib_regression=# SELECT * FROM
+contrib_regression\-# dblink_send_query(\(aqdtest1\(aq, \(aqselect * from foo where f1 < 3\(aq) AS t1;
+ t1
+\-\-\-\-
+  1
+(1 row)
+
+contrib_regression=# SELECT * FROM dblink_get_result(\(aqdtest1\(aq) AS t1(f1 int, f2 text, f3 text[]);
+ f1 | f2 |     f3
+\-\-\-\-+\-\-\-\-+\-\-\-\-\-\-\-\-\-\-\-\-
+  0 | a  | {a0,b0,c0}
+  1 | b  | {a1,b1,c1}
+  2 | c  | {a2,b2,c2}
+(3 rows)
+
+contrib_regression=# SELECT * FROM dblink_get_result(\(aqdtest1\(aq) AS t1(f1 int, f2 text, f3 text[]);
+ f1 | f2 | f3
+\-\-\-\-+\-\-\-\-+\-\-\-\-
+(0 rows)
+
+contrib_regression=# SELECT * FROM
+contrib_regression\-# dblink_send_query(\(aqdtest1\(aq, \(aqselect * from foo where f1 < 3; select * from foo where f1 > 6\(aq) AS t1;
+ t1
+\-\-\-\-
+  1
+(1 row)
+
+contrib_regression=# SELECT * FROM dblink_get_result(\(aqdtest1\(aq) AS t1(f1 int, f2 text, f3 text[]);
+ f1 | f2 |     f3
+\-\-\-\-+\-\-\-\-+\-\-\-\-\-\-\-\-\-\-\-\-
+  0 | a  | {a0,b0,c0}
+  1 | b  | {a1,b1,c1}
+  2 | c  | {a2,b2,c2}
+(3 rows)
+
+contrib_regression=# SELECT * FROM dblink_get_result(\(aqdtest1\(aq) AS t1(f1 int, f2 text, f3 text[]);
+ f1 | f2 |      f3
+\-\-\-\-+\-\-\-\-+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-
+  7 | h  | {a7,b7,c7}
+  8 | i  | {a8,b8,c8}
+  9 | j  | {a9,b9,c9}
+ 10 | k  | {a10,b10,c10}
+(4 rows)
+
+contrib_regression=# SELECT * FROM dblink_get_result(\(aqdtest1\(aq) AS t1(f1 int, f2 text, f3 text[]);
+ f1 | f2 | f3
+\-\-\-\-+\-\-\-\-+\-\-\-\-
+(0 rows)
+.fi
+.if n \{\
+.RE
+.\}

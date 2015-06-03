@@ -1,0 +1,61 @@
+'\" t
+.\"     Title: ALTER USER
+.\"    Author: The PostgreSQL Global Development Group
+.\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
+.\"      Date: 2010-09-16
+.\"    Manual: PostgreSQL 9.0.0 Documentation
+.\"    Source: PostgreSQL 9.0.0
+.\"  Language: English
+.\"
+.TH "ALTER USER" "7" "2010-09-16" "PostgreSQL 9.0.0" "PostgreSQL 9.0.0 Documentation"
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+ALTER_USER \- change a database role
+.\" ALTER USER
+.SH "SYNOPSIS"
+.sp
+.nf
+ALTER USER \fIname\fR [ [ WITH ] \fIoption\fR [ \&.\&.\&. ] ]
+
+where \fIoption\fR can be:
+    
+      SUPERUSER | NOSUPERUSER
+    | CREATEDB | NOCREATEDB
+    | CREATEROLE | NOCREATEROLE
+    | CREATEUSER | NOCREATEUSER
+    | INHERIT | NOINHERIT
+    | LOGIN | NOLOGIN
+    | CONNECTION LIMIT \fIconnlimit\fR
+    | [ ENCRYPTED | UNENCRYPTED ] PASSWORD \(aq\fIpassword\fR\(aq
+    | VALID UNTIL \(aq\fItimestamp\fR\(aq 
+
+ALTER USER \fIname\fR RENAME TO \fInew_name\fR
+
+ALTER USER \fIname\fR SET \fIconfiguration_parameter\fR { TO | = } { \fIvalue\fR | DEFAULT }
+ALTER USER \fIname\fR SET \fIconfiguration_parameter\fR FROM CURRENT
+ALTER USER \fIname\fR RESET \fIconfiguration_parameter\fR
+ALTER USER \fIname\fR RESET ALL
+.fi
+.SH "DESCRIPTION"
+.PP
+ALTER USER
+is now an alias for
+ALTER ROLE (\fBALTER_ROLE\fR(7))\&.
+.SH "COMPATIBILITY"
+.PP
+The
+ALTER USER
+statement is a
+PostgreSQL
+extension\&. The SQL standard leaves the definition of users to the implementation\&.
+.SH "SEE ALSO"
+ALTER ROLE (\fBALTER_ROLE\fR(7))

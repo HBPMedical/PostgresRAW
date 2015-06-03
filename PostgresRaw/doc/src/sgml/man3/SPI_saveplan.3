@@ -1,0 +1,72 @@
+'\" t
+.\"     Title: SPI_saveplan
+.\"    Author: The PostgreSQL Global Development Group
+.\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
+.\"      Date: 2010-09-16
+.\"    Manual: PostgreSQL 9.0.0 Documentation
+.\"    Source: PostgreSQL 9.0.0
+.\"  Language: English
+.\"
+.TH "SPI_SAVEPLAN" "3" "2010-09-16" "PostgreSQL 9.0.0" "PostgreSQL 9.0.0 Documentation"
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+SPI_saveplan \- save a plan
+.\" SPI_saveplan
+.SH "SYNOPSIS"
+.sp
+.nf
+SPIPlanPtr SPI_saveplan(SPIPlanPtr \fIplan\fR)
+.fi
+.SH "DESCRIPTION"
+.PP
+\fBSPI_saveplan\fR
+saves a passed plan (prepared by
+\fBSPI_prepare\fR) in memory that will not be freed by
+\fBSPI_finish\fR
+nor by the transaction manager, and returns a pointer to the saved plan\&. This gives you the ability to reuse prepared plans in the subsequent invocations of your procedure in the current session\&.
+.SH "ARGUMENTS"
+.PP
+SPIPlanPtr \fIplan\fR
+.RS 4
+the plan to be saved
+.RE
+.SH "RETURN VALUE"
+.PP
+Pointer to the saved plan;
+NULL
+if unsuccessful\&. On error,
+\fISPI_result\fR
+is set thus:
+.PP
+SPI_ERROR_ARGUMENT
+.RS 4
+if
+\fIplan\fR
+is
+NULL
+or invalid
+.RE
+.PP
+SPI_ERROR_UNCONNECTED
+.RS 4
+if called from an unconnected procedure
+.RE
+.SH "NOTES"
+.PP
+The passed\-in plan is not freed, so you might wish to do
+\fBSPI_freeplan\fR
+on it to avoid leaking memory until
+\fBSPI_finish\fR\&.
+.PP
+If one of the objects (a table, function, etc\&.) referenced by the prepared plan is dropped or redefined, then future executions of
+\fBSPI_execute_plan\fR
+may fail or return different results than the plan initially indicates\&.

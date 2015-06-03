@@ -1,0 +1,230 @@
+'\" t
+.\"     Title: ALTER SEQUENCE
+.\"    Author: The PostgreSQL Global Development Group
+.\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
+.\"      Date: 2010-09-16
+.\"    Manual: PostgreSQL 9.0.0 Documentation
+.\"    Source: PostgreSQL 9.0.0
+.\"  Language: English
+.\"
+.TH "ALTER SEQUENCE" "7" "2010-09-16" "PostgreSQL 9.0.0" "PostgreSQL 9.0.0 Documentation"
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+ALTER_SEQUENCE \- change the definition of a sequence generator
+.\" ALTER SEQUENCE
+.SH "SYNOPSIS"
+.sp
+.nf
+ALTER SEQUENCE \fIname\fR [ INCREMENT [ BY ] \fIincrement\fR ]
+    [ MINVALUE \fIminvalue\fR | NO MINVALUE ] [ MAXVALUE \fImaxvalue\fR | NO MAXVALUE ]
+    [ START [ WITH ] \fIstart\fR ]
+    [ RESTART [ [ WITH ] \fIrestart\fR ] ]
+    [ CACHE \fIcache\fR ] [ [ NO ] CYCLE ]
+    [ OWNED BY { \fItable\fR\&.\fIcolumn\fR | NONE } ]
+ALTER SEQUENCE \fIname\fR OWNER TO \fInew_owner\fR
+ALTER SEQUENCE \fIname\fR RENAME TO \fInew_name\fR
+ALTER SEQUENCE \fIname\fR SET SCHEMA \fInew_schema\fR
+.fi
+.SH "DESCRIPTION"
+.PP
+ALTER SEQUENCE
+changes the parameters of an existing sequence generator\&. Any parameters not specifically set in the
+ALTER SEQUENCE
+command retain their prior settings\&.
+.PP
+You must own the sequence to use
+ALTER SEQUENCE\&. To change a sequence\(aqs schema, you must also have
+CREATE
+privilege on the new schema\&. To alter the owner, you must also be a direct or indirect member of the new owning role, and that role must have
+CREATE
+privilege on the sequence\(aqs schema\&. (These restrictions enforce that altering the owner doesn\(aqt do anything you couldn\(aqt do by dropping and recreating the sequence\&. However, a superuser can alter ownership of any sequence anyway\&.)
+.SH "PARAMETERS"
+.PP
+.PP
+\fIname\fR
+.RS 4
+The name (optionally schema\-qualified) of a sequence to be altered\&.
+.RE
+.PP
+\fIincrement\fR
+.RS 4
+The clause
+INCREMENT BY \fIincrement\fR
+is optional\&. A positive value will make an ascending sequence, a negative one a descending sequence\&. If unspecified, the old increment value will be maintained\&.
+.RE
+.PP
+\fIminvalue\fR, NO MINVALUE
+.RS 4
+The optional clause
+MINVALUE \fIminvalue\fR
+determines the minimum value a sequence can generate\&. If
+NO MINVALUE
+is specified, the defaults of 1 and \-263\-1 for ascending and descending sequences, respectively, will be used\&. If neither option is specified, the current minimum value will be maintained\&.
+.RE
+.PP
+\fImaxvalue\fR, NO MAXVALUE
+.RS 4
+The optional clause
+MAXVALUE \fImaxvalue\fR
+determines the maximum value for the sequence\&. If
+NO MAXVALUE
+is specified, the defaults are 263\-1 and \-1 for ascending and descending sequences, respectively, will be used\&. If neither option is specified, the current maximum value will be maintained\&.
+.RE
+.PP
+\fIstart\fR
+.RS 4
+The optional clause
+START WITH \fIstart\fR
+changes the recorded start value of the sequence\&. This has no effect on the
+\fIcurrent\fR
+sequence value; it simply sets the value that future
+ALTER SEQUENCE RESTART
+commands will use\&.
+.RE
+.PP
+\fIrestart\fR
+.RS 4
+The optional clause
+RESTART [ WITH \fIrestart\fR ]
+changes the current value of the sequence\&. This is equivalent to calling the
+\fBsetval\fR
+function with
+is_called
+=
+false: the specified value will be returned by the
+\fInext\fR
+call of
+\fBnextval\fR\&. Writing
+RESTART
+with no
+\fIrestart\fR
+value is equivalent to supplying the start value that was recorded by
+CREATE SEQUENCE
+or last set by
+ALTER SEQUENCE START WITH\&.
+.RE
+.PP
+\fIcache\fR
+.RS 4
+The clause
+CACHE \fIcache\fR
+enables sequence numbers to be preallocated and stored in memory for faster access\&. The minimum value is 1 (only one value can be generated at a time, i\&.e\&., no cache)\&. If unspecified, the old cache value will be maintained\&.
+.RE
+.PP
+CYCLE
+.RS 4
+The optional
+CYCLE
+key word can be used to enable the sequence to wrap around when the
+\fImaxvalue\fR
+or
+\fIminvalue\fR
+has been reached by an ascending or descending sequence respectively\&. If the limit is reached, the next number generated will be the
+\fIminvalue\fR
+or
+\fImaxvalue\fR, respectively\&.
+.RE
+.PP
+NO CYCLE
+.RS 4
+If the optional
+NO CYCLE
+key word is specified, any calls to
+\fBnextval\fR
+after the sequence has reached its maximum value will return an error\&. If neither
+CYCLE
+or
+NO CYCLE
+are specified, the old cycle behavior will be maintained\&.
+.RE
+.PP
+OWNED BY \fItable\fR\&.\fIcolumn\fR, OWNED BY NONE
+.RS 4
+The
+OWNED BY
+option causes the sequence to be associated with a specific table column, such that if that column (or its whole table) is dropped, the sequence will be automatically dropped as well\&. If specified, this association replaces any previously specified association for the sequence\&. The specified table must have the same owner and be in the same schema as the sequence\&. Specifying
+OWNED BY NONE
+removes any existing association, making the sequence
+\(lqfree\-standing\(rq\&.
+.RE
+.PP
+\fInew_owner\fR
+.RS 4
+The user name of the new owner of the sequence\&.
+.RE
+.PP
+\fInew_name\fR
+.RS 4
+The new name for the sequence\&.
+.RE
+.PP
+\fInew_schema\fR
+.RS 4
+The new schema for the sequence\&.
+.RE
+.SH "NOTES"
+.PP
+To avoid blocking of concurrent transactions that obtain numbers from the same sequence,
+ALTER SEQUENCE\(aqs effects on the sequence generation parameters are never rolled back; those changes take effect immediately and are not reversible\&. However, the
+OWNED BY,
+OWNER TO,
+RENAME TO, and
+SET SCHEMA
+clauses cause ordinary catalog updates that can be rolled back\&.
+.PP
+ALTER SEQUENCE
+will not immediately affect
+\fBnextval\fR
+results in backends, other than the current one, that have preallocated (cached) sequence values\&. They will use up all cached values prior to noticing the changed sequence generation parameters\&. The current backend will be affected immediately\&.
+.PP
+ALTER SEQUENCE
+does not affect the
+\fBcurrval\fR
+status for the sequence\&. (Before
+PostgreSQL
+8\&.3, it sometimes did\&.)
+.PP
+For historical reasons,
+ALTER TABLE
+can be used with sequences too; but the only variants of
+ALTER TABLE
+that are allowed with sequences are equivalent to the forms shown above\&.
+.SH "EXAMPLES"
+.PP
+Restart a sequence called
+serial, at 105:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+ALTER SEQUENCE serial RESTART WITH 105;
+.fi
+.if n \{\
+.RE
+.\}
+.SH "COMPATIBILITY"
+.PP
+ALTER SEQUENCE
+conforms to the
+SQL
+standard, except for the
+START WITH,
+OWNED BY,
+OWNER TO,
+RENAME TO, and
+SET SCHEMA
+clauses, which are
+PostgreSQL
+extensions\&.
+.SH "SEE ALSO"
+CREATE SEQUENCE (\fBCREATE_SEQUENCE\fR(7)), DROP SEQUENCE (\fBDROP_SEQUENCE\fR(7))

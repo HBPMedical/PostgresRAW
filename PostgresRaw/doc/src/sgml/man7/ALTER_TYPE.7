@@ -1,0 +1,111 @@
+'\" t
+.\"     Title: ALTER TYPE
+.\"    Author: The PostgreSQL Global Development Group
+.\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
+.\"      Date: 2010-09-16
+.\"    Manual: PostgreSQL 9.0.0 Documentation
+.\"    Source: PostgreSQL 9.0.0
+.\"  Language: English
+.\"
+.TH "ALTER TYPE" "7" "2010-09-16" "PostgreSQL 9.0.0" "PostgreSQL 9.0.0 Documentation"
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+ALTER_TYPE \- change the definition of a type
+.\" ALTER TYPE
+.SH "SYNOPSIS"
+.sp
+.nf
+ALTER TYPE \fIname\fR RENAME TO \fInew_name\fR
+ALTER TYPE \fIname\fR OWNER TO \fInew_owner\fR 
+ALTER TYPE \fIname\fR SET SCHEMA \fInew_schema\fR
+.fi
+.SH "DESCRIPTION"
+.PP
+ALTER TYPE
+changes the definition of an existing type\&.
+.PP
+You must own the type to use
+ALTER TYPE\&. To change the schema of a type, you must also have
+CREATE
+privilege on the new schema\&. To alter the owner, you must also be a direct or indirect member of the new owning role, and that role must have
+CREATE
+privilege on the type\(aqs schema\&. (These restrictions enforce that altering the owner doesn\(aqt do anything you couldn\(aqt do by dropping and recreating the type\&. However, a superuser can alter ownership of any type anyway\&.)
+.SH "PARAMETERS"
+.PP
+.PP
+\fIname\fR
+.RS 4
+The name (possibly schema\-qualified) of an existing type to alter\&.
+.RE
+.PP
+\fInew_name\fR
+.RS 4
+The new name for the type\&.
+.RE
+.PP
+\fInew_owner\fR
+.RS 4
+The user name of the new owner of the type\&.
+.RE
+.PP
+\fInew_schema\fR
+.RS 4
+The new schema for the type\&.
+.RE
+.SH "EXAMPLES"
+.PP
+To rename a data type:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+ALTER TYPE electronic_mail RENAME TO email;
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+To change the owner of the type
+email
+to
+joe:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+ALTER TYPE email OWNER TO joe;
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+To change the schema of the type
+email
+to
+customers:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+ALTER TYPE email SET SCHEMA customers;
+.fi
+.if n \{\
+.RE
+.\}
+.SH "COMPATIBILITY"
+.PP
+There is no
+ALTER TYPE
+statement in the SQL standard\&.

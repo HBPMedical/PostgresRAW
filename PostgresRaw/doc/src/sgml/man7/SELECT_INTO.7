@@ -1,0 +1,130 @@
+'\" t
+.\"     Title: SELECT INTO
+.\"    Author: The PostgreSQL Global Development Group
+.\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
+.\"      Date: 2010-09-16
+.\"    Manual: PostgreSQL 9.0.0 Documentation
+.\"    Source: PostgreSQL 9.0.0
+.\"  Language: English
+.\"
+.TH "SELECT INTO" "7" "2010-09-16" "PostgreSQL 9.0.0" "PostgreSQL 9.0.0 Documentation"
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+SELECT_INTO \- define a new table from the results of a query
+.\" SELECT INTO
+.SH "SYNOPSIS"
+.sp
+.nf
+[ WITH [ RECURSIVE ] \fIwith_query\fR [, \&.\&.\&.] ]
+SELECT [ ALL | DISTINCT [ ON ( \fIexpression\fR [, \&.\&.\&.] ) ] ]
+    * | \fIexpression\fR [ [ AS ] \fIoutput_name\fR ] [, \&.\&.\&.]
+    INTO [ TEMPORARY | TEMP ] [ TABLE ] \fInew_table\fR
+    [ FROM \fIfrom_item\fR [, \&.\&.\&.] ]
+    [ WHERE \fIcondition\fR ]
+    [ GROUP BY \fIexpression\fR [, \&.\&.\&.] ]
+    [ HAVING \fIcondition\fR [, \&.\&.\&.] ]
+    [ WINDOW \fIwindow_name\fR AS ( \fIwindow_definition\fR ) [, \&.\&.\&.] ]
+    [ { UNION | INTERSECT | EXCEPT } [ ALL ] \fIselect\fR ]
+    [ ORDER BY \fIexpression\fR [ ASC | DESC | USING \fIoperator\fR ] [ NULLS { FIRST | LAST } ] [, \&.\&.\&.] ]
+    [ LIMIT { \fIcount\fR | ALL } ]
+    [ OFFSET \fIstart\fR [ ROW | ROWS ] ]
+    [ FETCH { FIRST | NEXT } [ \fIcount\fR ] { ROW | ROWS } ONLY ]
+    [ FOR { UPDATE | SHARE } [ OF \fItable_name\fR [, \&.\&.\&.] ] [ NOWAIT ] [\&.\&.\&.] ]
+.fi
+.SH "DESCRIPTION"
+.PP
+SELECT INTO
+creates a new table and fills it with data computed by a query\&. The data is not returned to the client, as it is with a normal
+SELECT\&. The new table\(aqs columns have the names and data types associated with the output columns of the
+SELECT\&.
+.SH "PARAMETERS"
+.PP
+TEMPORARY or TEMP
+.RS 4
+If specified, the table is created as a temporary table\&. Refer to
+CREATE TABLE (\fBCREATE_TABLE\fR(7))
+for details\&.
+.RE
+.PP
+\fInew_table\fR
+.RS 4
+The name (optionally schema\-qualified) of the table to be created\&.
+.RE
+.PP
+All other parameters are described in detail under
+\fBSELECT\fR(7)\&.
+.SH "NOTES"
+.PP
+CREATE TABLE AS (\fBCREATE_TABLE_AS\fR(7))
+is functionally similar to
+SELECT INTO\&.
+CREATE TABLE AS
+is the recommended syntax, since this form of
+SELECT INTO
+is not available in
+ECPG
+or
+PL/pgSQL, because they interpret the
+INTO
+clause differently\&. Furthermore,
+CREATE TABLE AS
+offers a superset of the functionality provided by
+SELECT INTO\&.
+.PP
+Prior to
+PostgreSQL
+8\&.1, the table created by
+SELECT INTO
+included OIDs by default\&. In
+PostgreSQL
+8\&.1, this is not the case \(em to include OIDs in the new table, the
+default_with_oids
+configuration variable must be enabled\&. Alternatively,
+CREATE TABLE AS
+can be used with the
+WITH OIDS
+clause\&.
+.SH "EXAMPLES"
+.PP
+Create a new table
+films_recent
+consisting of only recent entries from the table
+films:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+SELECT * INTO films_recent FROM films WHERE date_prod >= \(aq2002\-01\-01\(aq;
+.fi
+.if n \{\
+.RE
+.\}
+.SH "COMPATIBILITY"
+.PP
+The SQL standard uses
+SELECT INTO
+to represent selecting values into scalar variables of a host program, rather than creating a new table\&. This indeed is the usage found in
+ECPG
+(see
+Chapter 33, ECPG - Embedded SQL in C, in the documentation) and
+PL/pgSQL
+(see
+Chapter 39, PL/pgSQL - SQL Procedural Language, in the documentation)\&. The
+PostgreSQL
+usage of
+SELECT INTO
+to represent table creation is historical\&. It is best to use
+CREATE TABLE AS
+for this purpose in new code\&.
+.SH "SEE ALSO"
+CREATE TABLE AS (\fBCREATE_TABLE_AS\fR(7))

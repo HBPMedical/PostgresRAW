@@ -1,0 +1,63 @@
+'\" t
+.\"     Title: DROP DATABASE
+.\"    Author: The PostgreSQL Global Development Group
+.\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
+.\"      Date: 2010-09-16
+.\"    Manual: PostgreSQL 9.0.0 Documentation
+.\"    Source: PostgreSQL 9.0.0
+.\"  Language: English
+.\"
+.TH "DROP DATABASE" "7" "2010-09-16" "PostgreSQL 9.0.0" "PostgreSQL 9.0.0 Documentation"
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+DROP_DATABASE \- remove a database
+.\" DROP DATABASE
+.SH "SYNOPSIS"
+.sp
+.nf
+DROP DATABASE [ IF EXISTS ] \fIname\fR
+.fi
+.SH "DESCRIPTION"
+.PP
+DROP DATABASE
+drops a database\&. It removes the catalog entries for the database and deletes the directory containing the data\&. It can only be executed by the database owner\&. Also, it cannot be executed while you or anyone else are connected to the target database\&. (Connect to
+postgres
+or any other database to issue this command\&.)
+.PP
+DROP DATABASE
+cannot be undone\&. Use it with care!
+.SH "PARAMETERS"
+.PP
+IF EXISTS
+.RS 4
+Do not throw an error if the database does not exist\&. A notice is issued in this case\&.
+.RE
+.PP
+\fIname\fR
+.RS 4
+The name of the database to remove\&.
+.RE
+.SH "NOTES"
+.PP
+DROP DATABASE
+cannot be executed inside a transaction block\&.
+.PP
+This command cannot be executed while connected to the target database\&. Thus, it might be more convenient to use the program
+\fBdropdb\fR(1)
+instead, which is a wrapper around this command\&.
+.SH "COMPATIBILITY"
+.PP
+There is no
+DROP DATABASE
+statement in the SQL standard\&.
+.SH "SEE ALSO"
+CREATE DATABASE (\fBCREATE_DATABASE\fR(7))

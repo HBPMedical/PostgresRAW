@@ -1,0 +1,384 @@
+'\" t
+.\"     Title: CREATE TRIGGER
+.\"    Author: The PostgreSQL Global Development Group
+.\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
+.\"      Date: 2010-09-16
+.\"    Manual: PostgreSQL 9.0.0 Documentation
+.\"    Source: PostgreSQL 9.0.0
+.\"  Language: English
+.\"
+.TH "CREATE TRIGGER" "7" "2010-09-16" "PostgreSQL 9.0.0" "PostgreSQL 9.0.0 Documentation"
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+CREATE_TRIGGER \- define a new trigger
+.\" CREATE TRIGGER
+.SH "SYNOPSIS"
+.sp
+.nf
+CREATE TRIGGER \fIname\fR { BEFORE | AFTER } { \fIevent\fR [ OR \&.\&.\&. ] }
+    ON \fItable\fR [ FOR [ EACH ] { ROW | STATEMENT } ]
+    [ WHEN ( \fIcondition\fR ) ]
+    EXECUTE PROCEDURE \fIfunction_name\fR ( \fIarguments\fR )
+.fi
+.SH "DESCRIPTION"
+.PP
+CREATE TRIGGER
+creates a new trigger\&. The trigger will be associated with the specified table and will execute the specified function
+\fIfunction_name\fR
+when certain events occur\&.
+.PP
+The trigger can be specified to fire either before the operation is attempted on a row (before constraints are checked and the
+INSERT,
+UPDATE, or
+DELETE
+is attempted) or after the operation has completed (after constraints are checked and the
+INSERT,
+UPDATE, or
+DELETE
+has completed)\&. If the trigger fires before the event, the trigger can skip the operation for the current row, or change the row being inserted (for
+INSERT
+and
+UPDATE
+operations only)\&. If the trigger fires after the event, all changes, including the effects of other triggers, are
+\(lqvisible\(rq
+to the trigger\&.
+.PP
+A trigger that is marked
+FOR EACH ROW
+is called once for every row that the operation modifies\&. For example, a
+DELETE
+that affects 10 rows will cause any
+ON DELETE
+triggers on the target relation to be called 10 separate times, once for each deleted row\&. In contrast, a trigger that is marked
+FOR EACH STATEMENT
+only executes once for any given operation, regardless of how many rows it modifies (in particular, an operation that modifies zero rows will still result in the execution of any applicable
+FOR EACH STATEMENT
+triggers)\&.
+.PP
+In addition, triggers may be defined to fire for a
+TRUNCATE, though only
+FOR EACH STATEMENT\&.
+.PP
+Also, a trigger definition can specify a Boolean
+WHEN
+condition, which will be tested to see whether the trigger should be fired\&. In row\-level triggers the
+WHEN
+condition can examine the old and/or new values of columns of the row\&. Statement\-level triggers can also have
+WHEN
+conditions, although the feature is not so useful for them since the condition cannot refer to any values in the table\&.
+.PP
+If multiple triggers of the same kind are defined for the same event, they will be fired in alphabetical order by name\&.
+.PP
+SELECT
+does not modify any rows so you cannot create
+SELECT
+triggers\&. Rules and views are more appropriate in such cases\&.
+.PP
+Refer to
+Chapter 36, Triggers, in the documentation
+for more information about triggers\&.
+.SH "PARAMETERS"
+.PP
+\fIname\fR
+.RS 4
+The name to give the new trigger\&. This must be distinct from the name of any other trigger for the same table\&.
+.RE
+.PP
+BEFORE, AFTER
+.RS 4
+Determines whether the function is called before or after the event\&.
+.RE
+.PP
+\fIevent\fR
+.RS 4
+One of
+INSERT,
+UPDATE,
+DELETE, or
+TRUNCATE; this specifies the event that will fire the trigger\&. Multiple events can be specified using
+OR\&.
+.sp
+For
+UPDATE
+triggers, it is possible to specify a list of columns using this syntax:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+UPDATE OF \fIcolumn_name1\fR [, \fIcolumn_name2\fR \&.\&.\&. ]
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+
+The trigger will only fire if at least one of the listed columns is mentioned as a target of the update\&.
+.RE
+.PP
+\fItable\fR
+.RS 4
+The name (optionally schema\-qualified) of the table the trigger is for\&.
+.RE
+.PP
+FOR EACH ROW, FOR EACH STATEMENT
+.RS 4
+This specifies whether the trigger procedure should be fired once for every row affected by the trigger event, or just once per SQL statement\&. If neither is specified,
+FOR EACH STATEMENT
+is the default\&.
+.RE
+.PP
+\fIcondition\fR
+.RS 4
+A Boolean expression that determines whether the trigger function will actually be executed\&. If
+WHEN
+is specified, the function will only be called if the
+\fIcondition\fR
+returns
+true\&. In
+FOR EACH ROW
+triggers, the
+WHEN
+condition can refer to columns of the old and/or new row values by writing
+OLD\&.\fIcolumn_name\fR
+or
+NEW\&.\fIcolumn_name\fR
+respectively\&. Of course,
+INSERT
+triggers cannot refer to
+OLD
+and
+DELETE
+triggers cannot refer to
+NEW\&.
+.sp
+Currently,
+WHEN
+expressions cannot contain subqueries\&.
+.RE
+.PP
+\fIfunction_name\fR
+.RS 4
+A user\-supplied function that is declared as taking no arguments and returning type
+trigger, which is executed when the trigger fires\&.
+.RE
+.PP
+\fIarguments\fR
+.RS 4
+An optional comma\-separated list of arguments to be provided to the function when the trigger is executed\&. The arguments are literal string constants\&. Simple names and numeric constants can be written here, too, but they will all be converted to strings\&. Please check the description of the implementation language of the trigger function to find out how these arguments can be accessed within the function; it might be different from normal function arguments\&.
+.RE
+.SH "NOTES"
+.PP
+To create a trigger on a table, the user must have the
+TRIGGER
+privilege on the table\&.
+.PP
+Use
+DROP TRIGGER (\fBDROP_TRIGGER\fR(7))
+to remove a trigger\&.
+.PP
+A column\-specific trigger (FOR UPDATE OF \fIcolumn_name\fR) will fire when any of its columns are listed as targets in the
+UPDATE
+command\(aqs
+SET
+list\&. It is possible for a column\(aqs value to change even when the trigger is not fired, because changes made to the row\(aqs contents by
+BEFORE UPDATE
+triggers are not considered\&. Conversely, a command such as
+UPDATE \&.\&.\&. SET x = x \&.\&.\&.
+will fire a trigger on column
+x, even though the column\(aqs value did not change\&.
+.PP
+In a
+BEFORE
+trigger, the
+WHEN
+condition is evaluated just before the function is or would be executed, so using
+WHEN
+is not materially different from testing the same condition at the beginning of the trigger function\&. Note in particular that the
+NEW
+row seen by the condition is the current value, as possibly modified by earlier triggers\&. Also, a
+BEFORE
+trigger\(aqs
+WHEN
+condition is not allowed to examine the system columns of the
+NEW
+row (such as
+oid), because those won\(aqt have been set yet\&.
+.PP
+In an
+AFTER
+trigger, the
+WHEN
+condition is evaluated just after the row update occurs, and it determines whether an event is queued to fire the trigger at the end of statement\&. So when an
+AFTER
+trigger\(aqs
+WHEN
+condition does not return true, it is not necessary to queue an event nor to re\-fetch the row at end of statement\&. This can result in significant speedups in statements that modify many rows, if the trigger only needs to be fired for a few of the rows\&.
+.PP
+In
+PostgreSQL
+versions before 7\&.3, it was necessary to declare trigger functions as returning the placeholder type
+opaque, rather than
+trigger\&. To support loading of old dump files,
+CREATE TRIGGER
+will accept a function declared as returning
+opaque, but it will issue a notice and change the function\(aqs declared return type to
+trigger\&.
+.SH "EXAMPLES"
+.PP
+Execute the function
+\fBcheck_account_update\fR
+whenever a row of the table
+accounts
+is about to be updated:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+CREATE TRIGGER check_update
+    BEFORE UPDATE ON accounts
+    FOR EACH ROW
+    EXECUTE PROCEDURE check_account_update();
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+The same, but only execute the function if column
+balance
+is specified as a target in the
+UPDATE
+command:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+CREATE TRIGGER check_update
+    BEFORE UPDATE OF balance ON accounts
+    FOR EACH ROW
+    EXECUTE PROCEDURE check_account_update();
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+This form only executes the function if column
+balance
+has in fact changed value:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+CREATE TRIGGER check_update
+    BEFORE UPDATE ON accounts
+    FOR EACH ROW
+    WHEN (OLD\&.balance IS DISTINCT FROM NEW\&.balance)
+    EXECUTE PROCEDURE check_account_update();
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+Call a function to log updates of
+accounts, but only if something changed:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+CREATE TRIGGER log_update
+    AFTER UPDATE ON accounts
+    FOR EACH ROW
+    WHEN (OLD\&.* IS DISTINCT FROM NEW\&.*)
+    EXECUTE PROCEDURE log_account_update();
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Section 36.4, \(lqA Complete Trigger Example\(rq, in the documentation
+contains a complete example of a trigger function written in C\&.
+.SH "COMPATIBILITY"
+.PP
+The
+CREATE TRIGGER
+statement in
+PostgreSQL
+implements a subset of the
+SQL
+standard\&. The following functionality is currently missing:
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+SQL allows you to define aliases for the
+\(lqold\(rq
+and
+\(lqnew\(rq
+rows or tables for use in the definition of the triggered action (e\&.g\&.,
+CREATE TRIGGER \&.\&.\&. ON tablename REFERENCING OLD ROW AS somename NEW ROW AS othername \&.\&.\&.)\&. Since
+PostgreSQL
+allows trigger procedures to be written in any number of user\-defined languages, access to the data is handled in a language\-specific way\&.
+.RE
+.sp
+.RS 4
+.ie n \{\
+\h'-04'\(bu\h'+03'\c
+.\}
+.el \{\
+.sp -1
+.IP \(bu 2.3
+.\}
+PostgreSQL
+only allows the execution of a user\-defined function for the triggered action\&. The standard allows the execution of a number of other SQL commands, such as
+CREATE TABLE, as the triggered action\&. This limitation is not hard to work around by creating a user\-defined function that executes the desired commands\&.
+.RE
+.PP
+SQL specifies that multiple triggers should be fired in time\-of\-creation order\&.
+PostgreSQL
+uses name order, which was judged to be more convenient\&.
+.PP
+SQL specifies that
+BEFORE DELETE
+triggers on cascaded deletes fire
+\fIafter\fR
+the cascaded
+DELETE
+completes\&. The
+PostgreSQL
+behavior is for
+BEFORE DELETE
+to always fire before the delete action, even a cascading one\&. This is considered more consistent\&. There is also unpredictable behavior when
+BEFORE
+triggers modify rows or prevent updates during an update that is caused by a referential action\&. This can lead to constraint violations or stored data that does not honor the referential constraint\&.
+.PP
+The ability to specify multiple actions for a single trigger using
+OR
+is a
+PostgreSQL
+extension of the SQL standard\&.
+.PP
+The ability to fire triggers for
+TRUNCATE
+is a
+PostgreSQL
+extension of the SQL standard\&.
+.SH "SEE ALSO"
+CREATE FUNCTION (\fBCREATE_FUNCTION\fR(7)), ALTER TRIGGER (\fBALTER_TRIGGER\fR(7)), DROP TRIGGER (\fBDROP_TRIGGER\fR(7))

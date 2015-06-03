@@ -1,0 +1,427 @@
+'\" t
+.\"     Title: pg_ctl
+.\"    Author: The PostgreSQL Global Development Group
+.\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
+.\"      Date: 2010-09-16
+.\"    Manual: PostgreSQL 9.0.0 Documentation
+.\"    Source: PostgreSQL 9.0.0
+.\"  Language: English
+.\"
+.TH "PG_CTL" "1" "2010-09-16" "PostgreSQL 9.0.0" "PostgreSQL 9.0.0 Documentation"
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+pg_ctl \- initialize, start, stop, or restart a PostgreSQL server
+.\" pg_ctl
+.SH "SYNOPSIS"
+.HP \w'pg_ctlpg_ctlpg_ctlpg_ctlpg_ctlpg_ctlpg_ctlpg_ctlpg_ctl\ 'u
+pg_ctl init[db] [\-s] [\-D\ \fIdatadir\fR] [\-o\ \fIoptions\fR]
+.br
+pg_ctl start [\-w] [\-t\ \fIseconds\fR] [\-s] [\-D\ \fIdatadir\fR] [\-l\ \fIfilename\fR] [\-o\ \fIoptions\fR] [\-p\ \fIpath\fR] [\-c]
+.br
+pg_ctl stop [\-W] [\-t\ \fIseconds\fR] [\-s] [\-D\ \fIdatadir\fR] [\-m\ [s[mart]]\ |\ [f[ast]]\ |\ [i[mmediate]]]
+.br
+pg_ctl restart [\-w] [\-t\ \fIseconds\fR] [\-s] [\-D\ \fIdatadir\fR] [\-c] [\-m\ [s[mart]]\ |\ [f[ast]]\ |\ [i[mmediate]]] [\-o\ \fIoptions\fR]
+.br
+pg_ctl reload [\-s] [\-D\ \fIdatadir\fR]
+.br
+pg_ctl status [\-D\ \fIdatadir\fR]
+.br
+pg_ctl kill [\fIsignal_name\fR] [\fIprocess_id\fR]
+.br
+pg_ctl register [\-N\ \fIservicename\fR] [\-U\ \fIusername\fR] [\-P\ \fIpassword\fR] [\-D\ \fIdatadir\fR] [\-w] [\-t\ \fIseconds\fR] [\-o\ \fIoptions\fR]
+.br
+pg_ctl unregister [\-N\ \fIservicename\fR]
+.SH "DESCRIPTION"
+.PP
+pg_ctl
+is a utility for initializing a
+PostgreSQL
+database cluster, starting, stopping, or restarting the
+PostgreSQL
+backend server (\fBpostgres\fR(1)), or displaying the status of a running server\&. Although the server can be started manually,
+pg_ctl
+encapsulates tasks such as redirecting log output and properly detaching from the terminal and process group\&. It also provides convenient options for controlled shutdown\&.
+.PP
+The
+\fBinit\fR
+or
+\fBinitdb\fR
+mode creates a new
+PostgreSQL
+database cluster\&. A database cluster is a collection of databases that are managed by a single server instance\&. This mode invokes the
+initdb
+command\&. See
+\fBinitdb\fR(1)
+for details\&.
+.PP
+In
+\fBstart\fR
+mode, a new server is launched\&. The server is started in the background, and standard input is attached to
+/dev/null
+(or
+nul
+on Windows)\&. On Unix\-like systems, by default, the server\(aqs standard output and standard error are send to
+pg_ctl\(aqs standard output (not standard error)\&. The standard output of
+pg_ctl
+should then be redirected to a file or piped to another process such as a log rotating program like
+rotatelogs; otherwise
+postgres
+will write its output to the controlling terminal (from the background) and will not leave the shell\(aqs process group\&. On Windows, by default the server\(aqs standard output and standard error are sent to the terminal\&. These default behaviors can be changed by using
+\fB\-l\fR
+to append server output to a log file\&.
+.PP
+In
+\fBstop\fR
+mode, the server that is running in the specified data directory is shut down\&. Three different shutdown methods can be selected with the
+\fB\-m\fR
+option:
+\(lqSmart\(rq
+mode waits for online backup mode to finish and all the clients to disconnect\&. This is the default\&. If the server is in recovery, recovery and streaming replication will be terminated once all clients have disconnected\&.
+\(lqFast\(rq
+mode does not wait for clients to disconnect and will terminate an online backup in progress\&. All active transactions are rolled back and clients are forcibly disconnected, then the server is shut down\&.
+\(lqImmediate\(rq
+mode will abort all server processes without a clean shutdown\&. This will lead to a recovery run on restart\&.
+.PP
+\fBrestart\fR
+mode effectively executes a stop followed by a start\&. This allows changing the
+postgres
+command\-line options\&.
+.PP
+\fBreload\fR
+mode simply sends the
+postgres
+process a
+SIGHUP
+signal, causing it to reread its configuration files (postgresql\&.conf,
+pg_hba\&.conf, etc\&.)\&. This allows changing of configuration\-file options that do not require a complete restart to take effect\&.
+.PP
+\fBstatus\fR
+mode checks whether a server is running in the specified data directory\&. If it is, the
+PID
+and the command line options that were used to invoke it are displayed\&.
+.PP
+\fBkill\fR
+mode allows you to send a signal to a specified process\&. This is particularly valuable for
+Microsoft Windows
+which does not have a
+kill
+command\&. Use
+\-\-help
+to see a list of supported signal names\&.
+.PP
+\fBregister\fR
+mode allows you to register a system service on
+Microsoft Windows\&.
+.PP
+\fBunregister\fR
+mode allows you to unregister a system service on
+Microsoft Windows, previously registered with the
+\fBregister\fR
+command\&.
+.SH "OPTIONS"
+.PP
+\fB\-c\fR
+.RS 4
+Attempt to allow server crashes to produce core files, on platforms where this available, by lifting any soft resource limit placed on them\&. This is useful in debugging or diagnosing problems by allowing a stack trace to be obtained from a failed server process\&.
+.RE
+.PP
+\fB\-D \fR\fB\fIdatadir\fR\fR
+.RS 4
+Specifies the file system location of the database files\&. If this is omitted, the environment variable
+\fBPGDATA\fR
+is used\&.
+.RE
+.PP
+\fB\-l \fR\fB\fIfilename\fR\fR
+.RS 4
+Append the server log output to
+\fIfilename\fR\&. If the file does not exist, it is created\&. The
+umask
+is set to 077, so access to the log file from other users is disallowed by default\&.
+.RE
+.PP
+\fB\-m \fR\fB\fImode\fR\fR
+.RS 4
+Specifies the shutdown mode\&.
+\fImode\fR
+can be
+smart,
+fast, or
+immediate, or the first letter of one of these three\&.
+.RE
+.PP
+\fB\-o \fR\fB\fIoptions\fR\fR
+.RS 4
+Specifies options to be passed directly to the
+postgres
+command\&.
+.sp
+The options are usually surrounded by single or double quotes to ensure that they are passed through as a group\&.
+.RE
+.PP
+\fB\-p \fR\fB\fIpath\fR\fR
+.RS 4
+Specifies the location of the
+postgres
+executable\&. By default the
+postgres
+executable is taken from the same directory as
+pg_ctl, or failing that, the hard\-wired installation directory\&. It is not necessary to use this option unless you are doing something unusual and get errors that the
+postgres
+executable was not found\&.
+.sp
+In
+init
+mode, this option analogously specifies the location of the
+initdb
+executable\&.
+.RE
+.PP
+\fB\-s\fR
+.RS 4
+Only print errors, no informational messages\&.
+.RE
+.PP
+\fB\-t\fR
+.RS 4
+The number of seconds to wait when waiting for start or shutdown to complete\&.
+.RE
+.PP
+\fB\-w\fR
+.RS 4
+Wait for the start or shutdown to complete\&. The default wait time is 60 seconds\&. This is the default option for shutdowns\&. A successful shutdown is indicated by removal of the
+PID
+file\&. For starting up, a successful
+psql \-l
+indicates success\&.
+pg_ctl
+will attempt to use the proper port for
+psql\&. If the environment variable
+\fBPGPORT\fR
+exists, that is used\&. Otherwise, it will see if a port has been set in the
+postgresql\&.conf
+file\&. If neither of those is used, it will use the default port that
+PostgreSQL
+was compiled with (5432 by default)\&. When waiting,
+pg_ctl
+will return an accurate exit code based on the success of the startup or shutdown\&.
+.RE
+.PP
+\fB\-W\fR
+.RS 4
+Do not wait for start or shutdown to complete\&. This is the default for starts and restarts\&.
+.RE
+.SS "Options for Windows"
+.PP
+\fB\-N \fR\fB\fIservicename\fR\fR
+.RS 4
+Name of the system service to register\&. The name will be used as both the service name and the display name\&.
+.RE
+.PP
+\fB\-P \fR\fB\fIpassword\fR\fR
+.RS 4
+Password for the user to start the service\&.
+.RE
+.PP
+\fB\-U \fR\fB\fIusername\fR\fR
+.RS 4
+User name for the user to start the service\&. For domain users, use the format
+DOMAIN\eusername\&.
+.RE
+.SH "ENVIRONMENT"
+.PP
+\fBPGDATA\fR
+.RS 4
+Default data directory location\&.
+.RE
+.PP
+\fBPGHOST\fR
+.RS 4
+Default host name or Unix\-domain socket location for
+\fBpsql\fR(1)
+(used by the
+\fB\-w\fR
+option)\&.
+.RE
+.PP
+\fBPGPORT\fR
+.RS 4
+Default port number for
+\fBpsql\fR(1)
+(used by the
+\fB\-w\fR
+option)\&.
+.RE
+.PP
+For additional server variables, see
+\fBpostgres\fR(1)\&. This utility, like most other
+PostgreSQL
+utilities, also uses the environment variables supported by
+libpq
+(see
+Section 31.13, \(lqEnvironment Variables\(rq, in the documentation)\&.
+.SH "FILES"
+.PP
+postmaster\&.pid
+.RS 4
+The existence of this file in the data directory is used to help
+pg_ctl
+determine if the server is currently running or not\&.
+.RE
+.PP
+postmaster\&.opts
+.RS 4
+If this file exists in the data directory,
+pg_ctl
+(in
+\fBrestart\fR
+mode) will pass the contents of the file as options to
+postgres, unless overridden by the
+\fB\-o\fR
+option\&. The contents of this file are also displayed in
+\fBstatus\fR
+mode\&.
+.RE
+.PP
+postgresql\&.conf
+.RS 4
+This file, located in the data directory, is parsed to find the proper port to use with
+psql
+when the
+\fB\-w\fR
+is given in
+\fBstart\fR
+mode\&.
+.RE
+.SH "NOTES"
+.PP
+Waiting for complete start is not a well\-defined operation and might fail if access control is set up so that a local client cannot connect without manual interaction (e\&.g\&., password authentication)\&. For additional connection variables, see
+Section 31.13, \(lqEnvironment Variables\(rq, in the documentation, and for passwords, also see
+Section 31.14, \(lqThe Password File\(rq, in the documentation\&.
+.SH "EXAMPLES"
+.SS "Starting the Server"
+.PP
+To start up a server:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+$ \fBpg_ctl start\fR
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+An example of starting the server, blocking until the server has come up is:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+$ \fBpg_ctl \-w start\fR
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+For a server using port 5433, and running without
+\fBfsync\fR, use:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+$ \fBpg_ctl \-o "\-F \-p 5433" start\fR
+.fi
+.if n \{\
+.RE
+.\}
+.SS "Stopping the Server"
+.PP
+.if n \{\
+.RS 4
+.\}
+.nf
+$ \fBpg_ctl stop\fR
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+stops the server\&. Using the
+\fB\-m\fR
+switch allows one to control
+\fIhow\fR
+the backend shuts down\&.
+.SS "Restarting the Server"
+.PP
+Restarting the server is almost equivalent to stopping the server and starting it again except that
+pg_ctl
+saves and reuses the command line options that were passed to the previously running instance\&. To restart the server in the simplest form, use:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+$ \fBpg_ctl restart\fR
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+To restart server, waiting for it to shut down and to come up:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+$ \fBpg_ctl \-w restart\fR
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+To restart using port 5433 and disabling
+\fBfsync\fR
+after restarting:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+$ \fBpg_ctl \-o "\-F \-p 5433" restart\fR
+.fi
+.if n \{\
+.RE
+.\}
+.SS "Showing the Server Status"
+.PP
+Here is a sample status output from
+pg_ctl:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+$ \fBpg_ctl status\fR
+pg_ctl: server is running (pid: 13718)
+Command line was:
+/usr/local/pgsql/bin/postgres \(aq\-D\(aq \(aq/usr/local/pgsql/data\(aq \(aq\-p\(aq \(aq5433\(aq \(aq\-B\(aq \(aq128\(aq
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+This is the command line that would be invoked in restart mode\&.
+.SH "SEE ALSO"
+\fBinitdb\fR(1), \fBpostgres\fR(1)

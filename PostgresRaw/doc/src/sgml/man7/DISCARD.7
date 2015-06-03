@@ -1,0 +1,82 @@
+'\" t
+.\"     Title: DISCARD
+.\"    Author: The PostgreSQL Global Development Group
+.\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
+.\"      Date: 2010-09-16
+.\"    Manual: PostgreSQL 9.0.0 Documentation
+.\"    Source: PostgreSQL 9.0.0
+.\"  Language: English
+.\"
+.TH "DISCARD" "7" "2010-09-16" "PostgreSQL 9.0.0" "PostgreSQL 9.0.0 Documentation"
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+DISCARD \- discard session state
+.\" DISCARD
+.SH "SYNOPSIS"
+.sp
+.nf
+DISCARD { ALL | PLANS | TEMPORARY | TEMP }
+.fi
+.SH "DESCRIPTION"
+.PP
+DISCARD
+releases internal resources associated with a database session\&. These resources are normally released at the end of the session\&.
+.PP
+DISCARD TEMP
+drops all temporary tables created in the current session\&.
+DISCARD PLANS
+releases all internally cached query plans\&.
+DISCARD ALL
+resets a session to its original state, discarding temporary resources and resetting session\-local configuration changes\&.
+.SH "PARAMETERS"
+.PP
+TEMPORARY or TEMP
+.RS 4
+Drops all temporary tables created in the current session\&.
+.RE
+.PP
+PLANS
+.RS 4
+Releases all cached query plans\&.
+.RE
+.PP
+ALL
+.RS 4
+Releases all temporary resources associated with the current session and resets the session to its initial state\&. Currently, this has the same effect as executing the following sequence of statements:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+SET SESSION AUTHORIZATION DEFAULT;
+RESET ALL;
+DEALLOCATE ALL;
+CLOSE ALL;
+UNLISTEN *;
+SELECT pg_advisory_unlock_all();
+DISCARD PLANS;
+DISCARD TEMP;
+.fi
+.if n \{\
+.RE
+.\}
+.RE
+.SH "NOTES"
+.PP
+DISCARD ALL
+cannot be executed inside a transaction block\&.
+.SH "COMPATIBILITY"
+.PP
+DISCARD
+is a
+PostgreSQL
+extension\&.

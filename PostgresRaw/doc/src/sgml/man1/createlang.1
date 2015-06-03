@@ -1,0 +1,167 @@
+'\" t
+.\"     Title: createlang
+.\"    Author: The PostgreSQL Global Development Group
+.\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
+.\"      Date: 2010-09-16
+.\"    Manual: PostgreSQL 9.0.0 Documentation
+.\"    Source: PostgreSQL 9.0.0
+.\"  Language: English
+.\"
+.TH "CREATELANG" "1" "2010-09-16" "PostgreSQL 9.0.0" "PostgreSQL 9.0.0 Documentation"
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+createlang \- define a new PostgreSQL procedural language
+.\" createlang
+.SH "SYNOPSIS"
+.HP \w'createlangcreatelang\ 'u
+createlang [\fIconnection\-option\fR...] \fIlangname\fR [\fIdbname\fR]
+.br
+createlang [\fIconnection\-option\fR...] [\-\-list] | [\-l]  \fIdbname\fR
+.SH "DESCRIPTION"
+.PP
+createlang
+is a utility for adding a new programming language to a
+PostgreSQL
+database\&.
+createlang
+is just a wrapper around the
+CREATE LANGUAGE (\fBCREATE_LANGUAGE\fR(7))
+command\&.
+.SH "OPTIONS"
+.PP
+createlang
+accepts the following command\-line arguments:
+.PP
+\fIlangname\fR
+.RS 4
+Specifies the name of the procedural programming language to be defined\&.
+.RE
+.PP
+\fB[\-d]\fR\fB \fR\fB\fIdbname\fR\fR, \fB[\-\-dbname]\fR\fB \fR\fB\fIdbname\fR\fR
+.RS 4
+Specifies the database to which the language should be added\&. The default is to use the database with the same name as the current system user\&.
+.RE
+.PP
+\fB\-e\fR, \fB\-\-echo\fR
+.RS 4
+Display SQL commands as they are executed\&.
+.RE
+.PP
+\fB\-l\fR, \fB\-\-list\fR
+.RS 4
+Show a list of already installed languages in the target database\&.
+.RE
+.PP
+\fB\-V\fR, \fB\-\-version\fR
+.RS 4
+Print the
+createlang
+version and exit\&.
+.RE
+.PP
+\fB\-?\fR, \fB\-\-help\fR
+.RS 4
+Show help about
+createlang
+command line arguments, and exit\&.
+.RE
+.PP
+createlang
+also accepts the following command\-line arguments for connection parameters:
+.PP
+\fB\-h \fR\fB\fIhost\fR\fR, \fB\-\-host \fR\fB\fIhost\fR\fR
+.RS 4
+Specifies the host name of the machine on which the server is running\&. If the value begins with a slash, it is used as the directory for the Unix domain socket\&.
+.RE
+.PP
+\fB\-p \fR\fB\fIport\fR\fR, \fB\-\-port \fR\fB\fIport\fR\fR
+.RS 4
+Specifies the TCP port or local Unix domain socket file extension on which the server is listening for connections\&.
+.RE
+.PP
+\fB\-U \fR\fB\fIusername\fR\fR, \fB\-\-username \fR\fB\fIusername\fR\fR
+.RS 4
+User name to connect as\&.
+.RE
+.PP
+\fB\-w\fR, \fB\-\-no\-password\fR
+.RS 4
+Never issue a password prompt\&. If the server requires password authentication and a password is not available by other means such as a
+\&.pgpass
+file, the connection attempt will fail\&. This option can be useful in batch jobs and scripts where no user is present to enter a password\&.
+.RE
+.PP
+\fB\-W\fR, \fB\-\-password\fR
+.RS 4
+Force
+createlang
+to prompt for a password before connecting to a database\&.
+.sp
+This option is never essential, since
+createlang
+will automatically prompt for a password if the server demands password authentication\&. However,
+createlang
+will waste a connection attempt finding out that the server wants a password\&. In some cases it is worth typing
+\fB\-W\fR
+to avoid the extra connection attempt\&.
+.RE
+.SH "ENVIRONMENT"
+.PP
+\fBPGDATABASE\fR, \fBPGHOST\fR, \fBPGPORT\fR, \fBPGUSER\fR
+.RS 4
+Default connection parameters
+.RE
+.PP
+This utility, like most other
+PostgreSQL
+utilities, also uses the environment variables supported by
+libpq
+(see
+Section 31.13, \(lqEnvironment Variables\(rq, in the documentation)\&.
+.SH "DIAGNOSTICS"
+.PP
+Most error messages are self\-explanatory\&. If not, run
+createlang
+with the
+\fB\-\-echo\fR
+option and see the respective
+SQL
+command for details\&. Also, any default connection settings and environment variables used by the
+libpq
+front\-end library will apply\&.
+.SH "NOTES"
+.PP
+Use
+\fBdroplang\fR(1)
+to remove a language\&.
+.SH "EXAMPLES"
+.PP
+To install the language
+pltcl
+into the database
+template1:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+$ \fBcreatelang pltcl template1\fR
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+Note that installing the language into
+template1
+will cause it to be automatically installed into subsequently\-created databases as well\&.
+.SH "SEE ALSO"
+\fBdroplang\fR(1), CREATE LANGUAGE (\fBCREATE_LANGUAGE\fR(7))

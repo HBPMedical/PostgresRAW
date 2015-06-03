@@ -1,0 +1,146 @@
+'\" t
+.\"     Title: SET TRANSACTION
+.\"    Author: The PostgreSQL Global Development Group
+.\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
+.\"      Date: 2010-09-16
+.\"    Manual: PostgreSQL 9.0.0 Documentation
+.\"    Source: PostgreSQL 9.0.0
+.\"  Language: English
+.\"
+.TH "SET TRANSACTION" "7" "2010-09-16" "PostgreSQL 9.0.0" "PostgreSQL 9.0.0 Documentation"
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+SET_TRANSACTION \- set the characteristics of the current transaction
+.\" SET TRANSACTION
+.SH "SYNOPSIS"
+.sp
+.nf
+SET TRANSACTION \fItransaction_mode\fR [, \&.\&.\&.]
+SET SESSION CHARACTERISTICS AS TRANSACTION \fItransaction_mode\fR [, \&.\&.\&.]
+
+where \fItransaction_mode\fR is one of:
+
+    ISOLATION LEVEL { SERIALIZABLE | REPEATABLE READ | READ COMMITTED | READ UNCOMMITTED }
+    READ WRITE | READ ONLY
+.fi
+.SH "DESCRIPTION"
+.PP
+The
+SET TRANSACTION
+command sets the characteristics of the current transaction\&. It has no effect on any subsequent transactions\&.
+SET SESSION CHARACTERISTICS
+sets the default transaction characteristics for subsequent transactions of a session\&. These defaults can be overridden by
+SET TRANSACTION
+for an individual transaction\&.
+.PP
+The available transaction characteristics are the transaction isolation level and the transaction access mode (read/write or read\-only)\&.
+.PP
+The isolation level of a transaction determines what data the transaction can see when other transactions are running concurrently:
+.PP
+READ COMMITTED
+.RS 4
+A statement can only see rows committed before it began\&. This is the default\&.
+.RE
+.PP
+SERIALIZABLE
+.RS 4
+All statements of the current transaction can only see rows committed before the first query or data\-modification statement was executed in this transaction\&.
+.RE
+The SQL standard defines two additional levels,
+READ UNCOMMITTED
+and
+REPEATABLE READ\&. In
+PostgreSQLREAD UNCOMMITTED
+is treated as
+READ COMMITTED, while
+REPEATABLE READ
+is treated as
+SERIALIZABLE\&.
+.PP
+The transaction isolation level cannot be changed after the first query or data\-modification statement (SELECT,
+INSERT,
+DELETE,
+UPDATE,
+FETCH, or
+COPY) of a transaction has been executed\&. See
+Chapter 13, Concurrency Control, in the documentation
+for more information about transaction isolation and concurrency control\&.
+.PP
+The transaction access mode determines whether the transaction is read/write or read\-only\&. Read/write is the default\&. When a transaction is read\-only, the following SQL commands are disallowed:
+INSERT,
+UPDATE,
+DELETE, and
+COPY FROM
+if the table they would write to is not a temporary table; all
+CREATE,
+ALTER, and
+DROP
+commands;
+COMMENT,
+GRANT,
+REVOKE,
+TRUNCATE; and
+EXPLAIN ANALYZE
+and
+EXECUTE
+if the command they would execute is among those listed\&. This is a high\-level notion of read\-only that does not prevent all writes to disk\&.
+.SH "NOTES"
+.PP
+If
+SET TRANSACTION
+is executed without a prior
+START TRANSACTION
+or
+BEGIN, it will appear to have no effect, since the transaction will immediately end\&.
+.PP
+It is possible to dispense with
+SET TRANSACTION
+by instead specifying the desired
+\fItransaction_modes\fR
+in
+BEGIN
+or
+START TRANSACTION\&.
+.PP
+The session default transaction modes can also be set by setting the configuration parameters
+default_transaction_isolation
+and
+default_transaction_read_only\&. (In fact
+SET SESSION CHARACTERISTICS
+is just a verbose equivalent for setting these variables with
+SET\&.) This means the defaults can be set in the configuration file, via
+ALTER DATABASE, etc\&. Consult
+Chapter 18, Server Configuration, in the documentation
+for more information\&.
+.SH "COMPATIBILITY"
+.PP
+Both commands are defined in the
+SQL
+standard\&.
+SERIALIZABLE
+is the default transaction isolation level in the standard\&. In
+PostgreSQL
+the default is ordinarily
+READ COMMITTED, but you can change it as mentioned above\&. Because of lack of predicate locking, the
+SERIALIZABLE
+level is not truly serializable\&. See
+Chapter 13, Concurrency Control, in the documentation
+for details\&.
+.PP
+In the SQL standard, there is one other transaction characteristic that can be set with these commands: the size of the diagnostics area\&. This concept is specific to embedded SQL, and therefore is not implemented in the
+PostgreSQL
+server\&.
+.PP
+The SQL standard requires commas between successive
+\fItransaction_modes\fR, but for historical reasons
+PostgreSQL
+allows the commas to be omitted\&.

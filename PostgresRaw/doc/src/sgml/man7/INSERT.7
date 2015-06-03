@@ -1,0 +1,306 @@
+'\" t
+.\"     Title: INSERT
+.\"    Author: The PostgreSQL Global Development Group
+.\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
+.\"      Date: 2010-09-16
+.\"    Manual: PostgreSQL 9.0.0 Documentation
+.\"    Source: PostgreSQL 9.0.0
+.\"  Language: English
+.\"
+.TH "INSERT" "7" "2010-09-16" "PostgreSQL 9.0.0" "PostgreSQL 9.0.0 Documentation"
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+INSERT \- create new rows in a table
+.\" INSERT
+.SH "SYNOPSIS"
+.sp
+.nf
+INSERT INTO \fItable\fR [ ( \fIcolumn\fR [, \&.\&.\&.] ) ]
+    { DEFAULT VALUES | VALUES ( { \fIexpression\fR | DEFAULT } [, \&.\&.\&.] ) [, \&.\&.\&.] | \fIquery\fR }
+    [ RETURNING * | \fIoutput_expression\fR [ [ AS ] \fIoutput_name\fR ] [, \&.\&.\&.] ]
+.fi
+.SH "DESCRIPTION"
+.PP
+INSERT
+inserts new rows into a table\&. One can insert one or more rows specified by value expressions, or zero or more rows resulting from a query\&.
+.PP
+The target column names can be listed in any order\&. If no list of column names is given at all, the default is all the columns of the table in their declared order; or the first
+\fIN\fR
+column names, if there are only
+\fIN\fR
+columns supplied by the
+VALUES
+clause or
+\fIquery\fR\&. The values supplied by the
+VALUES
+clause or
+\fIquery\fR
+are associated with the explicit or implicit column list left\-to\-right\&.
+.PP
+Each column not present in the explicit or implicit column list will be filled with a default value, either its declared default value or null if there is none\&.
+.PP
+If the expression for any column is not of the correct data type, automatic type conversion will be attempted\&.
+.PP
+The optional
+RETURNING
+clause causes
+INSERT
+to compute and return value(s) based on each row actually inserted\&. This is primarily useful for obtaining values that were supplied by defaults, such as a serial sequence number\&. However, any expression using the table\(aqs columns is allowed\&. The syntax of the
+RETURNING
+list is identical to that of the output list of
+SELECT\&.
+.PP
+You must have
+INSERT
+privilege on a table in order to insert into it\&. If a column list is specified, you only need
+INSERT
+privilege on the listed columns\&. Use of the
+RETURNING
+clause requires
+SELECT
+privilege on all columns mentioned in
+RETURNING\&. If you use the
+\fIquery\fR
+clause to insert rows from a query, you of course need to have
+SELECT
+privilege on any table or column used in the query\&.
+.SH "PARAMETERS"
+.PP
+\fItable\fR
+.RS 4
+The name (optionally schema\-qualified) of an existing table\&.
+.RE
+.PP
+\fIcolumn\fR
+.RS 4
+The name of a column in
+\fItable\fR\&. The column name can be qualified with a subfield name or array subscript, if needed\&. (Inserting into only some fields of a composite column leaves the other fields null\&.)
+.RE
+.PP
+DEFAULT VALUES
+.RS 4
+All columns will be filled with their default values\&.
+.RE
+.PP
+\fIexpression\fR
+.RS 4
+An expression or value to assign to the corresponding
+\fIcolumn\fR\&.
+.RE
+.PP
+DEFAULT
+.RS 4
+The corresponding
+\fIcolumn\fR
+will be filled with its default value\&.
+.RE
+.PP
+\fIquery\fR
+.RS 4
+A query (SELECT
+statement) that supplies the rows to be inserted\&. Refer to the
+\fBSELECT\fR(7)
+statement for a description of the syntax\&.
+.RE
+.PP
+\fIoutput_expression\fR
+.RS 4
+An expression to be computed and returned by the
+INSERT
+command after each row is inserted\&. The expression can use any column names of the
+\fItable\fR\&. Write
+*
+to return all columns of the inserted row(s)\&.
+.RE
+.PP
+\fIoutput_name\fR
+.RS 4
+A name to use for a returned column\&.
+.RE
+.SH "OUTPUTS"
+.PP
+On successful completion, an
+INSERT
+command returns a command tag of the form
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+INSERT \fIoid\fR \fIcount\fR
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+The
+\fIcount\fR
+is the number of rows inserted\&. If
+\fIcount\fR
+is exactly one, and the target table has OIDs, then
+\fIoid\fR
+is the
+OID
+assigned to the inserted row\&. Otherwise
+\fIoid\fR
+is zero\&.
+.PP
+If the
+INSERT
+command contains a
+RETURNING
+clause, the result will be similar to that of a
+SELECT
+statement containing the columns and values defined in the
+RETURNING
+list, computed over the row(s) inserted by the command\&.
+.SH "EXAMPLES"
+.PP
+Insert a single row into table
+films:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+INSERT INTO films VALUES
+    (\(aqUA502\(aq, \(aqBananas\(aq, 105, \(aq1971\-07\-13\(aq, \(aqComedy\(aq, \(aq82 minutes\(aq);
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+In this example, the
+len
+column is omitted and therefore it will have the default value:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+INSERT INTO films (code, title, did, date_prod, kind)
+    VALUES (\(aqT_601\(aq, \(aqYojimbo\(aq, 106, \(aq1961\-06\-16\(aq, \(aqDrama\(aq);
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+This example uses the
+DEFAULT
+clause for the date columns rather than specifying a value:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+INSERT INTO films VALUES
+    (\(aqUA502\(aq, \(aqBananas\(aq, 105, DEFAULT, \(aqComedy\(aq, \(aq82 minutes\(aq);
+INSERT INTO films (code, title, did, date_prod, kind)
+    VALUES (\(aqT_601\(aq, \(aqYojimbo\(aq, 106, DEFAULT, \(aqDrama\(aq);
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+To insert a row consisting entirely of default values:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+INSERT INTO films DEFAULT VALUES;
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+To insert multiple rows using the multirow
+VALUES
+syntax:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+INSERT INTO films (code, title, did, date_prod, kind) VALUES
+    (\(aqB6717\(aq, \(aqTampopo\(aq, 110, \(aq1985\-02\-10\(aq, \(aqComedy\(aq),
+    (\(aqHG120\(aq, \(aqThe Dinner Game\(aq, 140, DEFAULT, \(aqComedy\(aq);
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+This example inserts some rows into table
+films
+from a table
+tmp_films
+with the same column layout as
+films:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+INSERT INTO films SELECT * FROM tmp_films WHERE date_prod < \(aq2004\-05\-07\(aq;
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+This example inserts into array columns:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+\-\- Create an empty 3x3 gameboard for noughts\-and\-crosses
+INSERT INTO tictactoe (game, board[1:3][1:3])
+    VALUES (1, \(aq{{" "," "," "},{" "," "," "},{" "," "," "}}\(aq);
+\-\- The subscripts in the above example aren\(aqt really needed
+INSERT INTO tictactoe (game, board)
+    VALUES (2, \(aq{{X," "," "},{" ",O," "},{" ",X," "}}\(aq);
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Insert a single row into table
+distributors, returning the sequence number generated by the
+DEFAULT
+clause:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+INSERT INTO distributors (did, dname) VALUES (DEFAULT, \(aqXYZ Widgets\(aq)
+   RETURNING did;
+.fi
+.if n \{\
+.RE
+.\}
+.SH "COMPATIBILITY"
+.PP
+INSERT
+conforms to the SQL standard, except that the
+RETURNING
+clause is a
+PostgreSQL
+extension\&. Also, the case in which a column name list is omitted, but not all the columns are filled from the
+VALUES
+clause or
+\fIquery\fR, is disallowed by the standard\&.
+.PP
+Possible limitations of the
+\fIquery\fR
+clause are documented under
+\fBSELECT\fR(7)\&.

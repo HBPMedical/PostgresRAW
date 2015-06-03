@@ -1,0 +1,51 @@
+'\" t
+.\"     Title: ALTER LARGE OBJECT
+.\"    Author: The PostgreSQL Global Development Group
+.\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
+.\"      Date: 2010-09-16
+.\"    Manual: PostgreSQL 9.0.0 Documentation
+.\"    Source: PostgreSQL 9.0.0
+.\"  Language: English
+.\"
+.TH "ALTER LARGE OBJECT" "7" "2010-09-16" "PostgreSQL 9.0.0" "PostgreSQL 9.0.0 Documentation"
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+ALTER_LARGE_OBJECT \- change the definition of a large object
+.\" ALTER LARGE OBJECT
+.SH "SYNOPSIS"
+.sp
+.nf
+ALTER LARGE OBJECT \fIlarge_object_oid\fR OWNER TO \fInew_owner\fR
+.fi
+.SH "DESCRIPTION"
+.PP
+ALTER LARGE OBJECT
+changes the definition of a large object\&. The only functionality is to assign a new owner\&. You must be superuser or owner of the large object to use
+ALTER LARGE OBJECT\&.
+.SH "PARAMETERS"
+.PP
+\fIlarge_object_oid\fR
+.RS 4
+OID of the large object to be altered
+.RE
+.PP
+\fInew_owner\fR
+.RS 4
+The new owner of the large object
+.RE
+.SH "COMPATIBILITY"
+.PP
+There is no
+ALTER LARGE OBJECT
+statement in the SQL standard\&.
+.SH "SEE ALSO"
+Chapter 32, Large Objects, in the documentation

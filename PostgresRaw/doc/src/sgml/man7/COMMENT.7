@@ -1,0 +1,221 @@
+'\" t
+.\"     Title: COMMENT
+.\"    Author: The PostgreSQL Global Development Group
+.\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
+.\"      Date: 2010-09-16
+.\"    Manual: PostgreSQL 9.0.0 Documentation
+.\"    Source: PostgreSQL 9.0.0
+.\"  Language: English
+.\"
+.TH "COMMENT" "7" "2010-09-16" "PostgreSQL 9.0.0" "PostgreSQL 9.0.0 Documentation"
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+COMMENT \- define or change the comment of an object
+.\" COMMENT
+.SH "SYNOPSIS"
+.sp
+.nf
+COMMENT ON
+{
+  TABLE \fIobject_name\fR |
+  COLUMN \fItable_name\fR\&.\fIcolumn_name\fR |
+  AGGREGATE \fIagg_name\fR (\fIagg_type\fR [, \&.\&.\&.] ) |
+  CAST (\fIsource_type\fR AS \fItarget_type\fR) |
+  CONSTRAINT \fIconstraint_name\fR ON \fItable_name\fR |
+  CONVERSION \fIobject_name\fR |
+  DATABASE \fIobject_name\fR |
+  DOMAIN \fIobject_name\fR |
+  FUNCTION \fIfunction_name\fR ( [ [ \fIargmode\fR ] [ \fIargname\fR ] \fIargtype\fR [, \&.\&.\&.] ] ) |
+  INDEX \fIobject_name\fR |
+  LARGE OBJECT \fIlarge_object_oid\fR |
+  OPERATOR \fIoperator_name\fR (\fIleft_type\fR, \fIright_type\fR) |
+  OPERATOR CLASS \fIobject_name\fR USING \fIindex_method\fR |
+  OPERATOR FAMILY \fIobject_name\fR USING \fIindex_method\fR |
+  [ PROCEDURAL ] LANGUAGE \fIobject_name\fR |
+  ROLE \fIobject_name\fR |
+  RULE \fIrule_name\fR ON \fItable_name\fR |
+  SCHEMA \fIobject_name\fR |
+  SEQUENCE \fIobject_name\fR |
+  TABLESPACE \fIobject_name\fR |
+  TEXT SEARCH CONFIGURATION \fIobject_name\fR |
+  TEXT SEARCH DICTIONARY \fIobject_name\fR |
+  TEXT SEARCH PARSER \fIobject_name\fR |
+  TEXT SEARCH TEMPLATE \fIobject_name\fR |
+  TRIGGER \fItrigger_name\fR ON \fItable_name\fR |
+  TYPE \fIobject_name\fR |
+  VIEW \fIobject_name\fR
+} IS \(aq\fItext\fR\(aq
+.fi
+.SH "DESCRIPTION"
+.PP
+COMMENT
+stores a comment about a database object\&.
+.PP
+To modify a comment, issue a new
+COMMENT
+command for the same object\&. Only one comment string is stored for each object\&. To remove a comment, write
+NULL
+in place of the text string\&. Comments are automatically dropped when the object is dropped\&.
+.PP
+Comments can be viewed using
+psql\(aqs
+\ed
+family of commands\&. Other user interfaces to retrieve comments can be built atop the same built\-in functions that
+psql
+uses, namely
+\fBobj_description\fR,
+\fBcol_description\fR, and
+\fBshobj_description\fR
+(see
+Table\ \&9.51, \(lqComment Information Functions\(rq)\&.
+.SH "PARAMETERS"
+.PP
+\fIobject_name\fR, \fItable_name\&.column_name\fR, \fIagg_name\fR, \fIconstraint_name\fR, \fIfunction_name\fR, \fIop\fR, \fIrule_name\fR, \fItrigger_name\fR
+.RS 4
+The name of the object to be commented\&. Names of tables, aggregates, domains, functions, indexes, operators, operator classes, operator families, sequences, text search objects, types, and views can be schema\-qualified\&.
+.RE
+.PP
+\fIagg_type\fR
+.RS 4
+An input data type on which the aggregate function operates\&. To reference a zero\-argument aggregate function, write
+*
+in place of the list of input data types\&.
+.RE
+.PP
+\fIsource_type\fR
+.RS 4
+The name of the source data type of the cast\&.
+.RE
+.PP
+\fItarget_type\fR
+.RS 4
+The name of the target data type of the cast\&.
+.RE
+.PP
+\fIargmode\fR
+.RS 4
+The mode of a function argument:
+IN,
+OUT,
+INOUT, or
+VARIADIC\&. If omitted, the default is
+IN\&. Note that
+COMMENT ON FUNCTION
+does not actually pay any attention to
+OUT
+arguments, since only the input arguments are needed to determine the function\(aqs identity\&. So it is sufficient to list the
+IN,
+INOUT, and
+VARIADIC
+arguments\&.
+.RE
+.PP
+\fIargname\fR
+.RS 4
+The name of a function argument\&. Note that
+COMMENT ON FUNCTION
+does not actually pay any attention to argument names, since only the argument data types are needed to determine the function\(aqs identity\&.
+.RE
+.PP
+\fIargtype\fR
+.RS 4
+The data type(s) of the function\(aqs arguments (optionally schema\-qualified), if any\&.
+.RE
+.PP
+\fIlarge_object_oid\fR
+.RS 4
+The OID of the large object\&.
+.RE
+.PP
+PROCEDURAL
+.RS 4
+This is a noise word\&.
+.RE
+.PP
+\fItext\fR
+.RS 4
+The new comment, written as a string literal; or
+NULL
+to drop the comment\&.
+.RE
+.SH "NOTES"
+.PP
+There is presently no security mechanism for comments: any user connected to a database can see all the comments for objects in that database (although only superusers can change comments for objects that they don\(aqt own)\&. For shared objects such as databases, roles, and tablespaces comments are stored globally and any user connected to any database can see all the comments for shared objects\&. Therefore, don\(aqt put security\-critical information in comments\&.
+.SH "EXAMPLES"
+.PP
+Attach a comment to the table
+mytable:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+COMMENT ON TABLE mytable IS \(aqThis is my table\&.\(aq;
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+Remove it again:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+COMMENT ON TABLE mytable IS NULL;
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Some more examples:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+COMMENT ON AGGREGATE my_aggregate (double precision) IS \(aqComputes sample variance\(aq;
+COMMENT ON CAST (text AS int4) IS \(aqAllow casts from text to int4\(aq;
+COMMENT ON COLUMN my_table\&.my_column IS \(aqEmployee ID number\(aq;
+COMMENT ON CONVERSION my_conv IS \(aqConversion to UTF8\(aq;
+COMMENT ON DATABASE my_database IS \(aqDevelopment Database\(aq;
+COMMENT ON DOMAIN my_domain IS \(aqEmail Address Domain\(aq;
+COMMENT ON FUNCTION my_function (timestamp) IS \(aqReturns Roman Numeral\(aq;
+COMMENT ON INDEX my_index IS \(aqEnforces uniqueness on employee ID\(aq;
+COMMENT ON LANGUAGE plpython IS \(aqPython support for stored procedures\(aq;
+COMMENT ON LARGE OBJECT 346344 IS \(aqPlanning document\(aq;
+COMMENT ON OPERATOR ^ (text, text) IS \(aqPerforms intersection of two texts\(aq;
+COMMENT ON OPERATOR \- (NONE, text) IS \(aqThis is a prefix operator on text\(aq;
+COMMENT ON OPERATOR CLASS int4ops USING btree IS \(aq4 byte integer operators for btrees\(aq;
+COMMENT ON OPERATOR FAMILY integer_ops USING btree IS \(aqall integer operators for btrees\(aq;
+COMMENT ON ROLE my_role IS \(aqAdministration group for finance tables\(aq;
+COMMENT ON RULE my_rule ON my_table IS \(aqLogs updates of employee records\(aq;
+COMMENT ON SCHEMA my_schema IS \(aqDepartmental data\(aq;
+COMMENT ON SEQUENCE my_sequence IS \(aqUsed to generate primary keys\(aq;
+COMMENT ON TABLE my_schema\&.my_table IS \(aqEmployee Information\(aq;
+COMMENT ON TABLESPACE my_tablespace IS \(aqTablespace for indexes\(aq;
+COMMENT ON TEXT SEARCH CONFIGURATION my_config IS \(aqSpecial word filtering\(aq;
+COMMENT ON TEXT SEARCH DICTIONARY swedish IS \(aqSnowball stemmer for swedish language\(aq;
+COMMENT ON TEXT SEARCH PARSER my_parser IS \(aqSplits text into words\(aq;
+COMMENT ON TEXT SEARCH TEMPLATE snowball IS \(aqSnowball stemmer\(aq;
+COMMENT ON TRIGGER my_trigger ON my_table IS \(aqUsed for RI\(aq;
+COMMENT ON TYPE complex IS \(aqComplex number data type\(aq;
+COMMENT ON VIEW my_view IS \(aqView of departmental costs\(aq;
+.fi
+.if n \{\
+.RE
+.\}
+.SH "COMPATIBILITY"
+.PP
+There is no
+COMMENT
+command in the SQL standard\&.

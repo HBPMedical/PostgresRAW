@@ -1,0 +1,595 @@
+'\" t
+.\"     Title: postgres
+.\"    Author: The PostgreSQL Global Development Group
+.\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
+.\"      Date: 2010-09-16
+.\"    Manual: PostgreSQL 9.0.0 Documentation
+.\"    Source: PostgreSQL 9.0.0
+.\"  Language: English
+.\"
+.TH "POSTGRES" "1" "2010-09-16" "PostgreSQL 9.0.0" "PostgreSQL 9.0.0 Documentation"
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+postgres \- PostgreSQL database server
+.\" postgres
+.SH "SYNOPSIS"
+.HP \w'postgres\ 'u
+postgres [\fIoption\fR...]
+.SH "DESCRIPTION"
+.PP
+postgres
+is the
+PostgreSQL
+database server\&. In order for a client application to access a database it connects (over a network or locally) to a running
+postgres
+instance\&. The
+postgres
+instance then starts a separate server process to handle the connection\&.
+.PP
+One
+postgres
+instance always manages the data of exactly one database cluster\&. A database cluster is a collection of databases that is stored at a common file system location (the
+\(lqdata area\(rq)\&. More than one
+postgres
+instance can run on a system at one time, so long as they use different data areas and different communication ports (see below)\&. When
+postgres
+starts it needs to know the location of the data area\&. The location must be specified by the
+\fB\-D\fR
+option or the
+\fBPGDATA\fR
+environment variable; there is no default\&. Typically,
+\fB\-D\fR
+or
+\fBPGDATA\fR
+points directly to the data area directory created by
+\fBinitdb\fR(1)\&. Other possible file layouts are discussed in
+Section 18.2, \(lqFile Locations\(rq, in the documentation\&.
+.PP
+By default
+postgres
+starts in the foreground and prints log messages to the standard error stream\&. In practical applications
+postgres
+should be started as a background process, perhaps at boot time\&.
+.PP
+The
+postgres
+command can also be called in single\-user mode\&. The primary use for this mode is during bootstrapping by
+\fBinitdb\fR(1)\&. Sometimes it is used for debugging or disaster recovery (but note that running a single\-user server is not truly suitable for debugging the server, since no realistic interprocess communication and locking will happen)\&. When invoked in single\-user mode from the shell, the user can enter queries and the results will be printed to the screen, but in a form that is more useful for developers than end users\&. In the single\-user mode, the session user will be set to the user with ID 1, and implicit superuser powers are granted to this user\&. This user does not actually have to exist, so the single\-user mode can be used to manually recover from certain kinds of accidental damage to the system catalogs\&.
+.SH "OPTIONS"
+.PP
+postgres
+accepts the following command\-line arguments\&. For a detailed discussion of the options consult
+Chapter 18, Server Configuration, in the documentation\&. You can save typing most of these options by setting up a configuration file\&. Some (safe) options can also be set from the connecting client in an application\-dependent way to apply only for that session\&. For example, if the environment variable
+\fBPGOPTIONS\fR
+is set, then
+libpq\-based clients will pass that string to the server, which will interpret it as
+postgres
+command\-line options\&.
+.SS "General Purpose"
+.PP
+\fB\-A 0|1\fR
+.RS 4
+Enables run\-time assertion checks, which is a debugging aid to detect programming mistakes\&. This option is only available if assertions were enabled when
+PostgreSQL
+was compiled\&. If so, the default is on\&.
+.RE
+.PP
+\fB\-B \fR\fB\fInbuffers\fR\fR
+.RS 4
+Sets the number of shared buffers for use by the server processes\&. The default value of this parameter is chosen automatically by
+initdb\&. Specifying this option is equivalent to setting the
+shared_buffers
+configuration parameter\&.
+.RE
+.PP
+\fB\-c \fR\fB\fIname\fR\fR\fB=\fR\fB\fIvalue\fR\fR
+.RS 4
+Sets a named run\-time parameter\&. The configuration parameters supported by
+PostgreSQL
+are described in
+Chapter 18, Server Configuration, in the documentation\&. Most of the other command line options are in fact short forms of such a parameter assignment\&.
+\fB\-c\fR
+can appear multiple times to set multiple parameters\&.
+.RE
+.PP
+\fB\-d \fR\fB\fIdebug\-level\fR\fR
+.RS 4
+Sets the debug level\&. The higher this value is set, the more debugging output is written to the server log\&. Values are from 1 to 5\&. It is also possible to pass
+\-d 0
+for a specific session, which will prevent the server log level of the parent
+postgres
+process from being propagated to this session\&.
+.RE
+.PP
+\fB\-D \fR\fB\fIdatadir\fR\fR
+.RS 4
+Specifies the file system location of the data directory or configuration file(s)\&. See
+Section 18.2, \(lqFile Locations\(rq, in the documentation
+for details\&.
+.RE
+.PP
+\fB\-e\fR
+.RS 4
+Sets the default date style to
+\(lqEuropean\(rq, that is
+DMY
+ordering of input date fields\&. This also causes the day to be printed before the month in certain date output formats\&. See
+Section 8.5, \(lqDate/Time Types\(rq, in the documentation
+for more information\&.
+.RE
+.PP
+\fB\-F\fR
+.RS 4
+Disables
+\fBfsync\fR
+calls for improved performance, at the risk of data corruption in the event of a system crash\&. Specifying this option is equivalent to disabling the
+fsync
+configuration parameter\&. Read the detailed documentation before using this!
+.RE
+.PP
+\fB\-h \fR\fB\fIhostname\fR\fR
+.RS 4
+Specifies the IP host name or address on which
+postgres
+is to listen for TCP/IP connections from client applications\&. The value can also be a comma\-separated list of addresses, or
+*
+to specify listening on all available interfaces\&. An empty value specifies not listening on any IP addresses, in which case only Unix\-domain sockets can be used to connect to the server\&. Defaults to listening only on
+localhost\&. Specifying this option is equivalent to setting the
+listen_addresses
+configuration parameter\&.
+.RE
+.PP
+\fB\-i\fR
+.RS 4
+Allows remote clients to connect via TCP/IP (Internet domain) connections\&. Without this option, only local connections are accepted\&. This option is equivalent to setting
+\fIlisten_addresses\fR
+to
+*
+in
+postgresql\&.conf
+or via
+\fB\-h\fR\&.
+.sp
+This option is deprecated since it does not allow access to the full functionality of
+listen_addresses\&. It\(aqs usually better to set
+\fIlisten_addresses\fR
+directly\&.
+.RE
+.PP
+\fB\-k \fR\fB\fIdirectory\fR\fR
+.RS 4
+Specifies the directory of the Unix\-domain socket on which
+postgres
+is to listen for connections from client applications\&. The default is normally
+/tmp, but can be changed at build time\&.
+.RE
+.PP
+\fB\-l\fR
+.RS 4
+Enables secure connections using
+SSL\&.
+PostgreSQL
+must have been compiled with support for
+SSL
+for this option to be available\&. For more information on using
+SSL, refer to
+Section 17.8, \(lqSecure TCP/IP Connections with SSL\(rq, in the documentation\&.
+.RE
+.PP
+\fB\-N \fR\fB\fImax\-connections\fR\fR
+.RS 4
+Sets the maximum number of client connections that this server will accept\&. The default value of this parameter is chosen automatically by
+initdb\&. Specifying this option is equivalent to setting the
+max_connections
+configuration parameter\&.
+.RE
+.PP
+\fB\-o \fR\fB\fIextra\-options\fR\fR
+.RS 4
+The command\-line\-style options specified in
+\fIextra\-options\fR
+are passed to all server processes started by this
+postgres
+process\&. If the option string contains any spaces, the entire string must be quoted\&.
+.sp
+The use of this option is obsolete; all command\-line options for server processes can be specified directly on the
+postgres
+command line\&.
+.RE
+.PP
+\fB\-p \fR\fB\fIport\fR\fR
+.RS 4
+Specifies the TCP/IP port or local Unix domain socket file extension on which
+postgres
+is to listen for connections from client applications\&. Defaults to the value of the
+\fBPGPORT\fR
+environment variable, or if
+\fBPGPORT\fR
+is not set, then defaults to the value established during compilation (normally 5432)\&. If you specify a port other than the default port, then all client applications must specify the same port using either command\-line options or
+\fBPGPORT\fR\&.
+.RE
+.PP
+\fB\-s\fR
+.RS 4
+Print time information and other statistics at the end of each command\&. This is useful for benchmarking or for use in tuning the number of buffers\&.
+.RE
+.PP
+\fB\-S\fR \fIwork\-mem\fR
+.RS 4
+Specifies the amount of memory to be used by internal sorts and hashes before resorting to temporary disk files\&. See the description of the
+\fIwork_mem\fR
+configuration parameter in
+Section 18.4.1, \(lqMemory\(rq, in the documentation\&.
+.RE
+.PP
+\fB\-\-\fR\fB\fIname\fR\fR\fB=\fR\fB\fIvalue\fR\fR
+.RS 4
+Sets a named run\-time parameter; a shorter form of
+\fB\-c\fR\&.
+.RE
+.PP
+\fB\-\-describe\-config\fR
+.RS 4
+This option dumps out the server\(aqs internal configuration variables, descriptions, and defaults in tab\-delimited
+COPY
+format\&. It is designed primarily for use by administration tools\&.
+.RE
+.SS "Semi\-internal Options"
+.PP
+The options described here are used mainly for debugging purposes, and in some cases to assist with recovery of severely damaged databases\&. There should be no reason to use them in a production database setup\&. They are listed here only for use by
+PostgreSQL
+system developers\&. Furthermore, these options might change or be removed in a future release without notice\&.
+.PP
+\fB\-f\fR { s | i | m | n | h }
+.RS 4
+Forbids the use of particular scan and join methods:
+s
+and
+i
+disable sequential and index scans respectively, while
+n,
+m, and
+h
+disable nested\-loop, merge and hash joins respectively\&.
+.sp
+Neither sequential scans nor nested\-loop joins can be disabled completely; the
+\-fs
+and
+\-fn
+options simply discourage the optimizer from using those plan types if it has any other alternative\&.
+.RE
+.PP
+\fB\-n\fR
+.RS 4
+This option is for debugging problems that cause a server process to die abnormally\&. The ordinary strategy in this situation is to notify all other server processes that they must terminate and then reinitialize the shared memory and semaphores\&. This is because an errant server process could have corrupted some shared state before terminating\&. This option specifies that
+postgres
+will not reinitialize shared data structures\&. A knowledgeable system programmer can then use a debugger to examine shared memory and semaphore state\&.
+.RE
+.PP
+\fB\-O\fR
+.RS 4
+Allows the structure of system tables to be modified\&. This is used by
+initdb\&.
+.RE
+.PP
+\fB\-P\fR
+.RS 4
+Ignore system indexes when reading system tables (but still update the indexes when modifying the tables)\&. This is useful when recovering from damaged system indexes\&.
+.RE
+.PP
+\fB\-t\fR pa[rser] | pl[anner] | e[xecutor]
+.RS 4
+Print timing statistics for each query relating to each of the major system modules\&. This option cannot be used together with the
+\fB\-s\fR
+option\&.
+.RE
+.PP
+\fB\-T\fR
+.RS 4
+This option is for debugging problems that cause a server process to die abnormally\&. The ordinary strategy in this situation is to notify all other server processes that they must terminate and then reinitialize the shared memory and semaphores\&. This is because an errant server process could have corrupted some shared state before terminating\&. This option specifies that
+postgres
+will stop all other server processes by sending the signal
+SIGSTOP, but will not cause them to terminate\&. This permits system programmers to collect core dumps from all server processes by hand\&.
+.RE
+.PP
+\fB\-v\fR \fIprotocol\fR
+.RS 4
+Specifies the version number of the frontend/backend protocol to be used for a particular session\&. This option is for internal use only\&.
+.RE
+.PP
+\fB\-W\fR \fIseconds\fR
+.RS 4
+A delay of this many seconds occurs when a new server process is started, after it conducts the authentication procedure\&. This is intended to give an opportunity to attach to the server process with a debugger\&.
+.RE
+.SS "Options for single\-user mode"
+.PP
+The following options only apply to the single\-user mode\&.
+.PP
+\fB\-\-single\fR
+.RS 4
+Selects the single\-user mode\&. This must be the first argument on the command line\&.
+.RE
+.PP
+\fIdatabase\fR
+.RS 4
+Specifies the name of the database to be accessed\&. This must be the last argument on the command line\&. If it is omitted it defaults to the user name\&.
+.RE
+.PP
+\fB\-E\fR
+.RS 4
+Echo all commands\&.
+.RE
+.PP
+\fB\-j\fR
+.RS 4
+Disables use of newline as a statement delimiter\&.
+.RE
+.PP
+\fB\-r\fR \fIfilename\fR
+.RS 4
+Send all server log output to
+\fIfilename\fR\&. In normal multiuser mode, this option is ignored, and
+stderr
+is used by all processes\&.
+.RE
+.SH "ENVIRONMENT"
+.PP
+\fBPGCLIENTENCODING\fR
+.RS 4
+Default character encoding used by clients\&. (The clients can override this individually\&.) This value can also be set in the configuration file\&.
+.RE
+.PP
+\fBPGDATA\fR
+.RS 4
+Default data directory location
+.RE
+.PP
+\fBPGDATESTYLE\fR
+.RS 4
+Default value of the
+DateStyle
+run\-time parameter\&. (The use of this environment variable is deprecated\&.)
+.RE
+.PP
+\fBPGPORT\fR
+.RS 4
+Default port number (preferably set in the configuration file)
+.RE
+.PP
+\fBTZ\fR
+.RS 4
+Server time zone
+.RE
+.SH "DIAGNOSTICS"
+.PP
+A failure message mentioning
+semget
+or
+shmget
+probably indicates you need to configure your kernel to provide adequate shared memory and semaphores\&. For more discussion see
+Section 17.4, \(lqManaging Kernel Resources\(rq, in the documentation\&. You might be able to postpone reconfiguring your kernel by decreasing
+shared_buffers
+to reduce the shared memory consumption of
+PostgreSQL, and/or by reducing
+max_connections
+to reduce the semaphore consumption\&.
+.PP
+A failure message suggesting that another server is already running should be checked carefully, for example by using the command
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+$ \fBps ax | grep postgres\fR
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+or
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+$ \fBps \-ef | grep postgres\fR
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+depending on your system\&. If you are certain that no conflicting server is running, you can remove the lock file mentioned in the message and try again\&.
+.PP
+A failure message indicating inability to bind to a port might indicate that that port is already in use by some non\-PostgreSQL
+process\&. You might also get this error if you terminate
+postgres
+and immediately restart it using the same port; in this case, you must simply wait a few seconds until the operating system closes the port before trying again\&. Finally, you might get this error if you specify a port number that your operating system considers to be reserved\&. For example, many versions of Unix consider port numbers under 1024 to be
+\(lqtrusted\(rq
+and only permit the Unix superuser to access them\&.
+.SH "NOTES"
+.PP
+The utility command
+\fBpg_ctl\fR(1)
+can be used to start and shut down the
+postgres
+server safely and comfortably\&.
+.PP
+If at all possible,
+\fIdo not\fR
+use
+SIGKILL
+to kill the main
+postgres
+server\&. Doing so will prevent
+postgres
+from freeing the system resources (e\&.g\&., shared memory and semaphores) that it holds before terminating\&. This might cause problems for starting a fresh
+postgres
+run\&.
+.PP
+To terminate the
+postgres
+server normally, the signals
+SIGTERM,
+SIGINT, or
+SIGQUIT
+can be used\&. The first will wait for all clients to terminate before quitting, the second will forcefully disconnect all clients, and the third will quit immediately without proper shutdown, resulting in a recovery run during restart\&.
+.PP
+The
+SIGHUP
+signal will reload the server configuration files\&. It is also possible to send
+SIGHUP
+to an individual server process, but that is usually not sensible\&.
+.PP
+To cancel a running query, send the
+SIGINT
+signal to the process running that command\&.
+.PP
+The
+postgres
+server uses
+SIGTERM
+to tell subordinate server processes to quit normally and
+SIGQUIT
+to terminate without the normal cleanup\&. These signals
+\fIshould not\fR
+be used by users\&. It is also unwise to send
+SIGKILL
+to a server process \(em the main
+postgres
+process will interpret this as a crash and will force all the sibling processes to quit as part of its standard crash\-recovery procedure\&.
+.SH "BUGS"
+.PP
+The
+\fB\-\-\fR
+options will not work on
+FreeBSD
+or
+OpenBSD\&. Use
+\fB\-c\fR
+instead\&. This is a bug in the affected operating systems; a future release of
+PostgreSQL
+will provide a workaround if this is not fixed\&.
+.SH "USAGE"
+.PP
+To start a single\-user mode server, use a command like
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+\fBpostgres \-\-single \-D /usr/local/pgsql/data \fR\fB\fIother\-options\fR\fR\fB my_database\fR
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+Provide the correct path to the database directory with
+\fB\-D\fR, or make sure that the environment variable
+\fBPGDATA\fR
+is set\&. Also specify the name of the particular database you want to work in\&.
+.PP
+Normally, the single\-user mode server treats newline as the command entry terminator; there is no intelligence about semicolons, as there is in
+psql\&. To continue a command across multiple lines, you must type backslash just before each newline except the last one\&.
+.PP
+But if you use the
+\fB\-j\fR
+command line switch, then newline does not terminate command entry\&. In this case, the server will read the standard input until the end\-of\-file (EOF) marker, then process the input as a single command string\&. Backslash\-newline is not treated specially in this case\&.
+.PP
+To quit the session, type
+EOF
+(Control+D, usually)\&. If you\(aqve used
+\fB\-j\fR, two consecutive
+EOFs are needed to exit\&.
+.PP
+Note that the single\-user mode server does not provide sophisticated line\-editing features (no command history, for example)\&.
+.SH "EXAMPLES"
+.PP
+To start
+postgres
+in the background using default values, type:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+$ \fBnohup postgres >logfile 2>&1 </dev/null &\fR
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+To start
+postgres
+with a specific port:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+$ \fBpostgres \-p 1234\fR
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+This command will start up
+postgres
+communicating through the port 1234\&. In order to connect to this server using
+psql, you would need to run it as
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+$ \fBpsql \-p 1234\fR
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+or set the environment variable
+\fBPGPORT\fR:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+$ \fBexport PGPORT=1234\fR
+$ \fBpsql\fR
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+Named run\-time parameters can be set in either of these styles:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+$ \fBpostgres \-c work_mem=1234\fR
+$ \fBpostgres \-\-work\-mem=1234\fR
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+Either form overrides whatever setting might exist for
+\fIwork_mem\fR
+in
+postgresql\&.conf\&. Notice that underscores in parameter names can be written as either underscore or dash on the command line\&. Except for short\-term experiments, it\(aqs probably better practice to edit the setting in
+postgresql\&.conf
+than to rely on a command\-line switch to set a parameter\&.
+.SH "SEE ALSO"
+.PP
+\fBinitdb\fR(1),
+\fBpg_ctl\fR(1)

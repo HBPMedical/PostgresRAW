@@ -1,0 +1,57 @@
+'\" t
+.\"     Title: ALTER LANGUAGE
+.\"    Author: The PostgreSQL Global Development Group
+.\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
+.\"      Date: 2010-09-16
+.\"    Manual: PostgreSQL 9.0.0 Documentation
+.\"    Source: PostgreSQL 9.0.0
+.\"  Language: English
+.\"
+.TH "ALTER LANGUAGE" "7" "2010-09-16" "PostgreSQL 9.0.0" "PostgreSQL 9.0.0 Documentation"
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+ALTER_LANGUAGE \- change the definition of a procedural language
+.\" ALTER LANGUAGE
+.SH "SYNOPSIS"
+.sp
+.nf
+ALTER [ PROCEDURAL ] LANGUAGE \fIname\fR RENAME TO \fInew_name\fR
+ALTER [ PROCEDURAL ] LANGUAGE \fIname\fR OWNER TO \fInew_owner\fR
+.fi
+.SH "DESCRIPTION"
+.PP
+ALTER LANGUAGE
+changes the definition of a procedural language\&. The only functionality is to rename the language or assign a new owner\&. You must be superuser or owner of the language to use
+ALTER LANGUAGE\&.
+.SH "PARAMETERS"
+.PP
+\fIname\fR
+.RS 4
+Name of a language
+.RE
+.PP
+\fInew_name\fR
+.RS 4
+The new name of the language
+.RE
+.PP
+\fInew_owner\fR
+.RS 4
+The new owner of the language
+.RE
+.SH "COMPATIBILITY"
+.PP
+There is no
+ALTER LANGUAGE
+statement in the SQL standard\&.
+.SH "SEE ALSO"
+CREATE LANGUAGE (\fBCREATE_LANGUAGE\fR(7)), DROP LANGUAGE (\fBDROP_LANGUAGE\fR(7))

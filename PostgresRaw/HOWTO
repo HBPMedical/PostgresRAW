@@ -1,0 +1,48 @@
+To install PostgresRaw you have to follow the same steps as in PostgreSQL:
+
+a) ./congfigure --prefix=<installation_path>
+b) make
+c) make install
+
+d) Initialize PostgreSQL database cluster
+<installation_path>/bin/initdb -D <DATADIR>
+e) Create a database
+bin/pg_ctl start -D <DATADIR>
+bin/createdb <DBNAME>
+f) Create a table
+bin/psql <DBNAME>
+<DBNAME>=# create table ... (http://www.postgresql.org/docs/9.1/static/sql-createtable.html) 
+PostgresRAW assumes that the schema is know a priori. Additionally, the schema should "map" the structure of the file (no semi-structured data, no schema discovery).
+
+Regarding PostgresRAW
+Under <DATADIR> there is the PostgreSQL configuration file: postgresql.conf
+
+In the end of this file you can find the NoDB parameters:
+
+Name of the NoDB configuration file:
+#conf_file                     = 'snoop.conf'
+This file should be stored under <DATADIR>.
+
+The structure of the file is the following:
+filename-1 = '/home/yannis/NoDB/datafiles/load.txt'  --> Link to data file
+relation-1 = 'persons'                               --> Table name
+delimiter-1 = ','                                    --> Delimiter for the file
+
+Similarly for more files...
+filename-2 = '/home/yannis/NoDB/datafiles/load2.txt'
+relation-2 = 'persons2'
+delimiter-2 = ','
+
+Enable/Disable NoDB
+#enable_invisible_db           = off
+
+You don't have to worry about the rest of the parameters
+
+Example:
+conf_file                     = 'snoop.conf'
+enable_invisible_db           = on
+
+Note1: If you change sth in the 'postgresql.conf' and you have to restart the DB
+Note2: If you change sth in the 'snoop.conf' and you have to restart the interactive terminal
+
+

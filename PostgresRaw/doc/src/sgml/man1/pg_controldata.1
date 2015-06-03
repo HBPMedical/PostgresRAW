@@ -1,0 +1,48 @@
+'\" t
+.\"     Title: pg_controldata
+.\"    Author: The PostgreSQL Global Development Group
+.\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
+.\"      Date: 2010-09-16
+.\"    Manual: PostgreSQL 9.0.0 Documentation
+.\"    Source: PostgreSQL 9.0.0
+.\"  Language: English
+.\"
+.TH "PG_CONTROLDATA" "1" "2010-09-16" "PostgreSQL 9.0.0" "PostgreSQL 9.0.0 Documentation"
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+pg_controldata \- display control information of a PostgreSQL database cluster
+.\" pg_controldata
+.SH "SYNOPSIS"
+.HP \w'pg_controldata\ 'u
+pg_controldata [\fIdatadir\fR]
+.SH "DESCRIPTION"
+.PP
+pg_controldata
+prints information initialized during
+initdb, such as the catalog version\&. It also shows information about write\-ahead logging and checkpoint processing\&. This information is cluster\-wide, and not specific to any one database\&.
+.PP
+This utility can only be run by the user who initialized the cluster because it requires read access to the data directory\&. You can specify the data directory on the command line, or use the environment variable
+\fBPGDATA\fR\&. This utility supports the options
+\-V
+and
+\-\-version, which print the
+pg_controldata
+version and exit\&. It also supports options
+\-?
+and
+\-\-help, which output the supported arguments\&.
+.SH "ENVIRONMENT"
+.PP
+\fBPGDATA\fR
+.RS 4
+Default data directory location
+.RE

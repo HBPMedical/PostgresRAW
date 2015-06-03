@@ -1,0 +1,208 @@
+'\" t
+.\"     Title: ALTER DOMAIN
+.\"    Author: The PostgreSQL Global Development Group
+.\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
+.\"      Date: 2010-09-16
+.\"    Manual: PostgreSQL 9.0.0 Documentation
+.\"    Source: PostgreSQL 9.0.0
+.\"  Language: English
+.\"
+.TH "ALTER DOMAIN" "7" "2010-09-16" "PostgreSQL 9.0.0" "PostgreSQL 9.0.0 Documentation"
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+ALTER_DOMAIN \- change the definition of a domain
+.\" ALTER DOMAIN
+.SH "SYNOPSIS"
+.sp
+.nf
+ALTER DOMAIN \fIname\fR
+    { SET DEFAULT \fIexpression\fR | DROP DEFAULT }
+ALTER DOMAIN \fIname\fR
+    { SET | DROP } NOT NULL
+ALTER DOMAIN \fIname\fR
+    ADD \fIdomain_constraint\fR
+ALTER DOMAIN \fIname\fR
+    DROP CONSTRAINT \fIconstraint_name\fR [ RESTRICT | CASCADE ]
+ALTER DOMAIN \fIname\fR
+    OWNER TO \fInew_owner\fR 
+ALTER DOMAIN \fIname\fR
+    SET SCHEMA \fInew_schema\fR 
+.fi
+.SH "DESCRIPTION"
+.PP
+ALTER DOMAIN
+changes the definition of an existing domain\&. There are several sub\-forms:
+.PP
+SET/DROP DEFAULT
+.RS 4
+These forms set or remove the default value for a domain\&. Note that defaults only apply to subsequent
+INSERT
+commands; they do not affect rows already in a table using the domain\&.
+.RE
+.PP
+SET/DROP NOT NULL
+.RS 4
+These forms change whether a domain is marked to allow NULL values or to reject NULL values\&. You can only
+SET NOT NULL
+when the columns using the domain contain no null values\&.
+.RE
+.PP
+ADD \fIdomain_constraint\fR
+.RS 4
+This form adds a new constraint to a domain using the same syntax as
+CREATE DOMAIN (\fBCREATE_DOMAIN\fR(7))\&. This will only succeed if all columns using the domain satisfy the new constraint\&.
+.RE
+.PP
+DROP CONSTRAINT
+.RS 4
+This form drops constraints on a domain\&.
+.RE
+.PP
+OWNER
+.RS 4
+This form changes the owner of the domain to the specified user\&.
+.RE
+.PP
+SET SCHEMA
+.RS 4
+This form changes the schema of the domain\&. Any constraints associated with the domain are moved into the new schema as well\&.
+.RE
+.PP
+You must own the domain to use
+ALTER DOMAIN\&. To change the schema of a domain, you must also have
+CREATE
+privilege on the new schema\&. To alter the owner, you must also be a direct or indirect member of the new owning role, and that role must have
+CREATE
+privilege on the domain\(aqs schema\&. (These restrictions enforce that altering the owner doesn\(aqt do anything you couldn\(aqt do by dropping and recreating the domain\&. However, a superuser can alter ownership of any domain anyway\&.)
+.SH "PARAMETERS"
+.PP
+.PP
+\fIname\fR
+.RS 4
+The name (possibly schema\-qualified) of an existing domain to alter\&.
+.RE
+.PP
+\fIdomain_constraint\fR
+.RS 4
+New domain constraint for the domain\&.
+.RE
+.PP
+\fIconstraint_name\fR
+.RS 4
+Name of an existing constraint to drop\&.
+.RE
+.PP
+CASCADE
+.RS 4
+Automatically drop objects that depend on the constraint\&.
+.RE
+.PP
+RESTRICT
+.RS 4
+Refuse to drop the constraint if there are any dependent objects\&. This is the default behavior\&.
+.RE
+.PP
+\fInew_owner\fR
+.RS 4
+The user name of the new owner of the domain\&.
+.RE
+.PP
+\fInew_schema\fR
+.RS 4
+The new schema for the domain\&.
+.RE
+.SH "NOTES"
+.PP
+Currently,
+ALTER DOMAIN ADD CONSTRAINT
+and
+ALTER DOMAIN SET NOT NULL
+will fail if the named domain or any derived domain is used within a composite\-type column of any table in the database\&. They should eventually be improved to be able to verify the new constraint for such nested columns\&.
+.SH "EXAMPLES"
+.PP
+To add a
+NOT NULL
+constraint to a domain:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+ALTER DOMAIN zipcode SET NOT NULL;
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+To remove a
+NOT NULL
+constraint from a domain:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+ALTER DOMAIN zipcode DROP NOT NULL;
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+To add a check constraint to a domain:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+ALTER DOMAIN zipcode ADD CONSTRAINT zipchk CHECK (char_length(VALUE) = 5);
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+To remove a check constraint from a domain:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+ALTER DOMAIN zipcode DROP CONSTRAINT zipchk;
+.fi
+.if n \{\
+.RE
+.\}
+.PP
+To move the domain into a different schema:
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+ALTER DOMAIN zipcode SET SCHEMA customers;
+.fi
+.if n \{\
+.RE
+.\}
+.SH "COMPATIBILITY"
+.PP
+ALTER DOMAIN
+conforms to the
+SQL
+standard, except for the
+OWNER
+and
+SET SCHEMA
+variants, which are
+PostgreSQL
+extensions\&.
+.SH "SEE ALSO"
+CREATE DOMAIN (\fBCREATE_DOMAIN\fR(7)), DROP DOMAIN (\fBDROP_DOMAIN\fR(7))

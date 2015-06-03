@@ -1,0 +1,41 @@
+'\" t
+.\"     Title: SPI_freetuple
+.\"    Author: The PostgreSQL Global Development Group
+.\" Generator: DocBook XSL Stylesheets v1.75.1 <http://docbook.sf.net/>
+.\"      Date: 2010-09-16
+.\"    Manual: PostgreSQL 9.0.0 Documentation
+.\"    Source: PostgreSQL 9.0.0
+.\"  Language: English
+.\"
+.TH "SPI_FREETUPLE" "3" "2010-09-16" "PostgreSQL 9.0.0" "PostgreSQL 9.0.0 Documentation"
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+SPI_freetuple \- free a row allocated in the upper executor context
+.\" SPI_freetuple
+.SH "SYNOPSIS"
+.sp
+.nf
+void SPI_freetuple(HeapTuple \fIrow\fR)
+.fi
+.SH "DESCRIPTION"
+.PP
+\fBSPI_freetuple\fR
+frees a row previously allocated in the upper executor context\&.
+.PP
+This function is no longer different from plain
+\fBheap_freetuple\fR\&. It\(aqs kept just for backward compatibility of existing code\&.
+.SH "ARGUMENTS"
+.PP
+HeapTuple \fIrow\fR
+.RS 4
+row to free
+.RE

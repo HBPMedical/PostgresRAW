@@ -1,0 +1,461 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<HTML
+><HEAD
+><TITLE
+>PL/Perl Under the Hood</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.79"><LINK
+REV="MADE"
+HREF="mailto:pgsql-docs@postgresql.org"><LINK
+REL="HOME"
+TITLE="PostgreSQL 9.0.0 Documentation"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="PL/Perl - Perl Procedural Language"
+HREF="plperl.html"><LINK
+REL="PREVIOUS"
+TITLE="PL/Perl Triggers"
+HREF="plperl-triggers.html"><LINK
+REL="NEXT"
+TITLE="PL/Python - Python Procedural Language"
+HREF="plpython.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="stylesheet.css"><META
+HTTP-EQUIV="Content-Type"
+CONTENT="text/html; charset=ISO-8859-1"><META
+NAME="creation"
+CONTENT="2010-09-17T01:31:37"></HEAD
+><BODY
+CLASS="SECT1"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="5"
+ALIGN="center"
+VALIGN="bottom"
+><A
+HREF="index.html"
+>PostgreSQL 9.0.0 Documentation</A
+></TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="top"
+><A
+TITLE="PL/Perl Triggers"
+HREF="plperl-triggers.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="top"
+><A
+TITLE="PL/Perl - Perl Procedural Language"
+HREF="plperl.html"
+>Fast Backward</A
+></TD
+><TD
+WIDTH="60%"
+ALIGN="center"
+VALIGN="bottom"
+>Chapter 41. PL/Perl - Perl Procedural Language</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="top"
+><A
+TITLE="PL/Perl - Perl Procedural Language"
+HREF="plperl.html"
+>Fast Forward</A
+></TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="top"
+><A
+TITLE="PL/Python - Python Procedural Language"
+HREF="plpython.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="PLPERL-UNDER-THE-HOOD"
+>41.7. PL/Perl Under the Hood</A
+></H1
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="PLPERL-CONFIG"
+>41.7.1. Configuration</A
+></H2
+><P
+>  This section lists configuration parameters that affect <SPAN
+CLASS="APPLICATION"
+>PL/Perl</SPAN
+>.
+  To set any of these parameters before <SPAN
+CLASS="APPLICATION"
+>PL/Perl</SPAN
+> has been loaded,
+  it is necessary to have added <SPAN
+CLASS="QUOTE"
+>"<TT
+CLASS="LITERAL"
+>plperl</TT
+>"</SPAN
+> to the
+  <A
+HREF="runtime-config-custom.html#GUC-CUSTOM-VARIABLE-CLASSES"
+>custom_variable_classes</A
+> list in
+  <TT
+CLASS="FILENAME"
+>postgresql.conf</TT
+>.
+  </P
+><P
+></P
+><DIV
+CLASS="VARIABLELIST"
+><DL
+><DT
+><A
+NAME="GUC-PLPERL-ON-INIT"
+></A
+><TT
+CLASS="VARNAME"
+>plperl.on_init</TT
+> (<TT
+CLASS="TYPE"
+>string</TT
+>)</DT
+><DD
+><P
+>       Specifies Perl code to be executed when a Perl interpreter is first initialized
+       and before it is specialized for use by <TT
+CLASS="LITERAL"
+>plperl</TT
+> or <TT
+CLASS="LITERAL"
+>plperlu</TT
+>.
+       The SPI functions are not available when this code is executed.
+       If the code fails with an error it will abort the initialization of the interpreter
+       and propagate out to the calling query, causing the current transaction
+       or subtransaction to be aborted.
+       </P
+><P
+>       The Perl code is limited to a single string. Longer code can be placed
+       into a module and loaded by the <TT
+CLASS="LITERAL"
+>on_init</TT
+> string.
+       Examples:
+</P><PRE
+CLASS="PROGRAMLISTING"
+>plperl.on_init = 'require "plperlinit.pl"'
+plperl.on_init = 'use lib "/my/app"; use MyApp::PgInit;'</PRE
+><P>
+       </P
+><P
+>       Any modules loaded by <TT
+CLASS="LITERAL"
+>plperl.on_init</TT
+>, either directly or
+       indirectly, will be available for use by <TT
+CLASS="LITERAL"
+>plperl</TT
+>.  This may
+       create a security risk. To see what modules have been loaded you can use:
+</P><PRE
+CLASS="PROGRAMLISTING"
+>DO 'elog(WARNING, join ", ", sort keys %INC)' language plperl;</PRE
+><P>
+       </P
+><P
+>       Initialization will happen in the postmaster if the plperl library is included
+       in <TT
+CLASS="LITERAL"
+>shared_preload_libraries</TT
+> (see <A
+HREF="runtime-config-resource.html#GUC-SHARED-PRELOAD-LIBRARIES"
+>shared_preload_libraries</A
+>),
+       in which case extra consideration should be given to the risk of destabilizing the postmaster.
+       </P
+><P
+>       This parameter can only be set in the postgresql.conf file or on the server command line.
+       </P
+></DD
+><DT
+><A
+NAME="GUC-PLPERL-ON-PLPERL-INIT"
+></A
+><TT
+CLASS="VARNAME"
+>plperl.on_plperl_init</TT
+> (<TT
+CLASS="TYPE"
+>string</TT
+>)<BR><TT
+CLASS="VARNAME"
+>plperl.on_plperlu_init</TT
+> (<TT
+CLASS="TYPE"
+>string</TT
+>)</DT
+><DD
+><P
+>       These parameters specify Perl code to be executed when the
+       <TT
+CLASS="LITERAL"
+>plperl</TT
+>, or <TT
+CLASS="LITERAL"
+>plperlu</TT
+> language is first used in a
+       session.  Changes to these parameters after the corresponding language
+       has been used will have no effect.
+       The SPI functions are not available when this code is executed.
+       Only superusers can change these settings.
+       The Perl code in <TT
+CLASS="LITERAL"
+>plperl.on_plperl_init</TT
+> can only perform trusted operations.
+       </P
+><P
+>       The effect of setting these parameters is very similar to executing a
+       <TT
+CLASS="LITERAL"
+>DO</TT
+> command with the Perl code before any other use of the
+       language.  The parameters are useful when you want to execute the Perl
+       code automatically on every connection, or when a connection is not
+       interactive. The parameters can be used by non-superusers by having a
+       superuser execute an <TT
+CLASS="LITERAL"
+>ALTER USER ... SET ...</TT
+> command.
+       For example:
+</P><PRE
+CLASS="PROGRAMLISTING"
+>ALTER USER joe SET plperl.on_plperl_init = '$_SHARED{debug} = 1';</PRE
+><P>
+       </P
+><P
+>       If the code fails with an error it will abort the initialization and
+       propagate out to the calling query, causing the current transaction or
+       subtransaction to be aborted. Any changes within Perl won't be undone.
+       If the language is used again the initialization will be repeated.
+       </P
+><P
+>       The difference between these two settings and the 
+       <TT
+CLASS="LITERAL"
+>plperl.on_init</TT
+> setting is that these can be used for
+       settings specific to the trusted or untrusted language variant, such
+       as setting values in the <TT
+CLASS="VARNAME"
+>%_SHARED</TT
+> variable. By contrast,
+       <TT
+CLASS="LITERAL"
+>plperl.on_init</TT
+> is more useful for doing things like
+       setting the library search path for <SPAN
+CLASS="PRODUCTNAME"
+>Perl</SPAN
+> or 
+       loading Perl modules that don't interact directly with 
+       <SPAN
+CLASS="PRODUCTNAME"
+>PostgreSQL</SPAN
+>.
+       </P
+></DD
+><DT
+><A
+NAME="GUC-PLPERL-USE-STRICT"
+></A
+><TT
+CLASS="VARNAME"
+>plperl.use_strict</TT
+> (<TT
+CLASS="TYPE"
+>boolean</TT
+>)</DT
+><DD
+><P
+>       When set true subsequent compilations of PL/Perl functions have the <TT
+CLASS="LITERAL"
+>strict</TT
+> pragma enabled.
+       This parameter does not affect functions already compiled in the current session.
+       </P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="PLPERL-MISSING"
+>41.7.2. Limitations and Missing Features</A
+></H2
+><P
+>   The following features are currently missing from PL/Perl, but they
+   would make welcome contributions.
+
+   <P
+></P
+></P><UL
+><LI
+><P
+>      PL/Perl functions cannot call each other directly.
+     </P
+></LI
+><LI
+><P
+>      SPI is not yet fully implemented.
+     </P
+></LI
+><LI
+><P
+>      If you are fetching very large data sets using
+      <TT
+CLASS="LITERAL"
+>spi_exec_query</TT
+>, you should be aware that
+      these will all go into memory.  You can avoid this by using
+      <TT
+CLASS="LITERAL"
+>spi_query</TT
+>/<TT
+CLASS="LITERAL"
+>spi_fetchrow</TT
+> as
+      illustrated earlier.
+     </P
+><P
+>        A similar problem occurs if a set-returning function passes a
+        large set of rows back to PostgreSQL via <TT
+CLASS="LITERAL"
+>return</TT
+>. You
+        can avoid this problem too by instead using
+        <TT
+CLASS="LITERAL"
+>return_next</TT
+> for each row returned, as shown
+        previously.
+     </P
+></LI
+><LI
+><P
+>        When a session ends normally, not due to a fatal error, any
+        <TT
+CLASS="LITERAL"
+>END</TT
+> blocks that have been defined are executed.
+        Currently no other actions are performed. Specifically, 
+        file handles are not automatically flushed and objects are 
+        not automatically destroyed.
+      </P
+></LI
+></UL
+><P>
+  </P
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="plperl-triggers.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="plpython.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>PL/Perl Triggers</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="plperl.html"
+ACCESSKEY="U"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>PL/Python - Python Procedural Language</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

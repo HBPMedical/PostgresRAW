@@ -1,0 +1,407 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<HTML
+><HEAD
+><TITLE
+>Getting The Source Via Anonymous CVS</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.79"><LINK
+REV="MADE"
+HREF="mailto:pgsql-docs@postgresql.org"><LINK
+REL="HOME"
+TITLE="PostgreSQL 9.0.0 Documentation"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="The Source Code Repository"
+HREF="cvs.html"><LINK
+REL="PREVIOUS"
+TITLE="Getting The Source Via Git"
+HREF="git.html"><LINK
+REL="NEXT"
+TITLE="Getting The Source Via rsync"
+HREF="rsync.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="stylesheet.css"><META
+HTTP-EQUIV="Content-Type"
+CONTENT="text/html; charset=ISO-8859-1"><META
+NAME="creation"
+CONTENT="2010-09-17T01:31:37"></HEAD
+><BODY
+CLASS="SECT1"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="5"
+ALIGN="center"
+VALIGN="bottom"
+><A
+HREF="index.html"
+>PostgreSQL 9.0.0 Documentation</A
+></TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="top"
+><A
+TITLE="Getting The Source Via Git"
+HREF="git.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="top"
+><A
+TITLE="The Source Code Repository"
+HREF="cvs.html"
+>Fast Backward</A
+></TD
+><TD
+WIDTH="60%"
+ALIGN="center"
+VALIGN="bottom"
+>Appendix H. The Source Code Repository</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="top"
+><A
+TITLE="The Source Code Repository"
+HREF="cvs.html"
+>Fast Forward</A
+></TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="top"
+><A
+TITLE="Getting The Source Via rsync"
+HREF="rsync.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="ANONCVS"
+>H.2. Getting The Source Via Anonymous <SPAN
+CLASS="PRODUCTNAME"
+>CVS</SPAN
+></A
+></H1
+><P
+>   If you would like to keep up with the current sources on a regular
+   basis, you can fetch them from our <SPAN
+CLASS="PRODUCTNAME"
+>CVS</SPAN
+> server
+   and then use <SPAN
+CLASS="PRODUCTNAME"
+>CVS</SPAN
+> to
+   retrieve updates from time to time.
+  </P
+><DIV
+CLASS="PROCEDURE"
+><P
+><B
+>Anonymous CVS</B
+></P
+><OL
+TYPE="1"
+><LI
+CLASS="STEP"
+><P
+>     You will need a local copy of <SPAN
+CLASS="PRODUCTNAME"
+>CVS</SPAN
+>
+     (Concurrent Version Control System), which you can get from
+     <A
+HREF="http://www.nongnu.org/cvs/"
+TARGET="_top"
+>http://www.nongnu.org/cvs/</A
+> (the official
+     site with the latest version) or any GNU software archive site
+     (often somewhat outdated). Many systems have a recent version of
+     <SPAN
+CLASS="APPLICATION"
+>cvs</SPAN
+> installed by default.
+    </P
+></LI
+><LI
+CLASS="STEP"
+><P
+>     Do an initial login to the <SPAN
+CLASS="PRODUCTNAME"
+>CVS</SPAN
+> server:
+
+</P><PRE
+CLASS="PROGRAMLISTING"
+>cvs -d :pserver:anoncvs@anoncvs.postgresql.org:/projects/cvsroot login</PRE
+><P>
+
+     You will be prompted for a password; you can enter anything except
+     an empty string.
+    </P
+><P
+>     You should only need to do this once, since the password will be
+     saved in <TT
+CLASS="FILENAME"
+>.cvspass</TT
+> in your home directory.
+    </P
+></LI
+><LI
+CLASS="STEP"
+><P
+>     Fetch the <SPAN
+CLASS="PRODUCTNAME"
+>PostgreSQL</SPAN
+> sources:
+</P><PRE
+CLASS="PROGRAMLISTING"
+>cvs -z3 -d :pserver:anoncvs@anoncvs.postgresql.org:/projects/cvsroot co -P pgsql</PRE
+><P>
+
+     This installs the <SPAN
+CLASS="PRODUCTNAME"
+>PostgreSQL</SPAN
+> sources into a
+     subdirectory <TT
+CLASS="FILENAME"
+>pgsql</TT
+>
+     of the directory you are currently in.
+    </P
+><P
+>     This initial checkout is a little slower than simply downloading
+     a <TT
+CLASS="FILENAME"
+>tar.gz</TT
+> file. The advantage of <SPAN
+CLASS="PRODUCTNAME"
+>CVS</SPAN
+>
+     doesn't show up until you want to update the file set later on.
+    </P
+></LI
+><LI
+CLASS="STEP"
+><P
+>     Whenever you want to update to the latest <SPAN
+CLASS="PRODUCTNAME"
+>CVS</SPAN
+> sources,
+     <TT
+CLASS="COMMAND"
+>cd</TT
+> into
+     the <TT
+CLASS="FILENAME"
+>pgsql</TT
+> subdirectory, and issue:
+</P><PRE
+CLASS="PROGRAMLISTING"
+>cvs -z3 update -d -P</PRE
+><P>
+
+     This will fetch only the changes since the last time you updated.
+     You can update in just a couple of minutes, typically, even over
+     a modem-speed line.
+    </P
+></LI
+><LI
+CLASS="STEP"
+><P
+>     You can save yourself some typing by making a file <TT
+CLASS="FILENAME"
+>.cvsrc</TT
+>
+     in your home directory that contains:
+
+</P><PRE
+CLASS="PROGRAMLISTING"
+>cvs -z3
+update -d -P</PRE
+><P>
+
+     This supplies the <TT
+CLASS="OPTION"
+>-z3</TT
+> option to all <TT
+CLASS="COMMAND"
+>cvs</TT
+> commands, and the
+     <TT
+CLASS="OPTION"
+>-d</TT
+> and <TT
+CLASS="OPTION"
+>-P</TT
+> options to <TT
+CLASS="COMMAND"
+>cvs update</TT
+>.  Then you just have
+     to say:
+</P><PRE
+CLASS="PROGRAMLISTING"
+>cvs update</PRE
+><P>
+
+     to update your files.
+    </P
+></LI
+></OL
+></DIV
+><P
+>   <SPAN
+CLASS="PRODUCTNAME"
+>CVS</SPAN
+> can do a lot of other things, such
+   as fetching prior revisions of the
+   <SPAN
+CLASS="PRODUCTNAME"
+>PostgreSQL</SPAN
+> sources rather than the
+   latest development version.  For more info consult the manual that
+   comes with <SPAN
+CLASS="PRODUCTNAME"
+>CVS</SPAN
+>, or see the online
+   documentation at <A
+HREF="http://www.nongnu.org/cvs/"
+TARGET="_top"
+>http://www.nongnu.org/cvs/</A
+>.
+  </P
+><P
+>   <SPAN
+CLASS="PRODUCTNAME"
+>CVS</SPAN
+> has deficiencies.  For example,
+   generating diffs that add or remove files requires write access to the
+   CVS repository.  To work around that deficiency, use
+   <SPAN
+CLASS="PRODUCTNAME"
+>cvsutils</SPAN
+>, which is packaged in several
+   operating systems, and is available in source form at <A
+HREF="http://www.red-bean.com/cvsutils/"
+TARGET="_top"
+>http://www.red-bean.com/cvsutils/</A
+>, or use <SPAN
+CLASS="PRODUCTNAME"
+>Git</SPAN
+>
+   or another system designed to work offline.
+  </P
+><P
+>   Note that building <SPAN
+CLASS="PRODUCTNAME"
+>PostgreSQL</SPAN
+> from a CVS
+   pull requires reasonably up-to-date versions of <SPAN
+CLASS="APPLICATION"
+>bison</SPAN
+>
+   and <SPAN
+CLASS="APPLICATION"
+>flex</SPAN
+>, which are not needed to build from a distribution
+   tarball because the files made with them are pre-built in a tarball.
+   You will need Perl as well.
+   Otherwise the tool requirements are the same as building from source.
+  </P
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="git.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="rsync.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Getting The Source Via <SPAN
+CLASS="PRODUCTNAME"
+>Git</SPAN
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="cvs.html"
+ACCESSKEY="U"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Getting The Source Via <SPAN
+CLASS="PRODUCTNAME"
+>rsync</SPAN
+></TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>
