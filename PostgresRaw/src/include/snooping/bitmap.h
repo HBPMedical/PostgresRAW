@@ -37,12 +37,12 @@ BitMap *copyBitMap(BitMap *input);
 void copyToBitMap(BitMap input, BitMap *output);
 void copyToBitMap2(int* input, int size, BitMap *output);
 
-//void setBit(BitMap *bitmap, int n);
-inline void setBit(BitMap *bitmap, int n);
+void setBit(BitMap *bitmap, int n);
+//inline void setBit(BitMap *bitmap, int n);
 void setBitValue(BitMap *bitmap, int n, int value);
 void clearBit(BitMap *bitmap, int n);
-//int getBit(BitMap bitmap, int n);
-inline int getBit(BitMap *bitmap, int n);
+int getBit(BitMap *bitmap, int n);
+//inline int getBit(BitMap *bitmap, int n);
 void flipBit(BitMap *bitmap, int n);
 void printBitMap(BitMap bitmap);
 

@@ -86,7 +86,7 @@ void copyToBitMap2(int* input, int size, BitMap *output)
 }
 
 
-inline void setBit(BitMap *bitmap, int n)
+void setBit(BitMap *bitmap, int n)
 {
 	bitmap->bitmap[n] = 1;
 }
@@ -106,7 +106,7 @@ void clearBit(BitMap *bitmap, int n)
 	bitmap->bitmap[n] = 0;
 }
 
-inline int getBit(BitMap *bitmap, int n)
+int getBit(BitMap *bitmap, int n)
 {
 	return bitmap->bitmap[n];
 }
