@@ -528,9 +528,8 @@
 #------------------------------------------------------------------------------
 # INVISIBLEDB OPTIONS
 #------------------------------------------------------------------------------
-
-#conf_file                     = 'snoop.conf'
-#enable_invisible_db           = off
+conf_file                     = 'snoop.conf'
+enable_invisible_db           = on
 #enable_tuple_metapointers     = off
 #enable_internal_metapointers  = off
 #enable_caching                = off
@@ -538,9 +537,3 @@
 
 #num_internal_metapointers = -1
 #num_cached_columns = -1
-
-
-
-
-
-
