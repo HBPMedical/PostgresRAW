@@ -138,6 +138,7 @@ NoDBScanOperator_t *NoDBScanOperatorInit(ScanState *scanInfo)
     char *filename;
     char *command;
     char *delimiter;
+    int header;
     char *relation = scanInfo->ss_currentRelation->rd_rel->relname.data;
 
     /* Extra check: Environment should be already loaded... */
@@ -147,6 +148,7 @@ NoDBScanOperator_t *NoDBScanOperatorInit(ScanState *scanInfo)
 
     filename = getInputFilename(relation);
     delimiter = getDelimiter(relation);
+    header = getHeader(relation);
 
     Assert(filename != NULL);
     if(delimiter == NULL)
@@ -158,10 +160,29 @@ NoDBScanOperator_t *NoDBScanOperatorInit(ScanState *scanInfo)
     // Access data file using copy command: "COPY <relation> FROM '<link to data file>' WITH DELIMITER 'delimiter'"
     command = (char*)palloc(MAX_COMMAND_SIZE * sizeof(char));
 
+    char *delimiterOption;
+    char *headerOption;
+
     if ( strcmp( delimiter, "\\t") == 0  || strcmp( delimiter, "\\r") == 0 || strcmp( delimiter, "\\n") == 0)
-        sprintf(command, "COPY %s FROM '%s' WITH DELIMITER E'%s';",relation, filename, delimiter);
+        sprintf(delimiterOption, "WITH DELIMITER E'%s'", delimiter);
     else
-        sprintf(command, "COPY %s FROM '%s' WITH DELIMITER '%s';",relation, filename, delimiter);
+        sprintf(delimiterOption, "WITH DELIMITER '%s'", delimiter);
+
+    /*
+     * Adding support for csv files with header
+     * The pgsql COPY command apparently used here has an option HEADER which leads to the omission of
+     * the file's first line.
+     * There is no option for multiline headers, so if the code relies on the COPY command, multiline
+     * headers should not be supported.
+     * The HEADER option can only be used if the FORMAT 'csv' option is used, which is currently not the
+     * case. Why this is and how it can be changed has to be explored. (E.g. see GetScanState below)
+     */
+    if (header > 0)
+    	sprintf(headerOption, ", HEADER TRUE");
+    else
+    	sprintf(headerOption, ", HEADER FALSE");
+
+    sprintf(command, "COPY %s FROM '%s' %s %s;",relation, filename, delimiterOption, headerOption);
 
     scanOper->planCopyStmt  = GetQueryCopyStmt(command);
     scanOper->cstate        = GetScanState(scanOper->planCopyStmt, command);

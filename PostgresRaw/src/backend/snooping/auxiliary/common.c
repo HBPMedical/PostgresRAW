@@ -31,7 +31,7 @@ USE OF THIS SOFTWARE.
 
 
 #include "snooping/common.h"
-#include "snooping/metadata.h"
+//#include "snooping/metadata.h"
 
 
 
@@ -84,6 +84,21 @@ char *getDelimiter(char *relation)
 		{
 			if(strcmp(CF.files[i].relation, relation) == 0)
 				return CF.files[i].delimiter;
+		}
+	}
+	return NULL;
+}
+
+char *getHeader(char *relation)
+{
+	int i;
+	if(CF.loaded != true)
+		return NULL;
+	for ( i = 0; i < NUMBER_OF_RELATIONS; i++){
+		if( CF.files[i].id != -1)
+		{
+			if(strcmp(CF.files[i].relation, relation) == 0)
+				return CF.files[i].header;
 		}
 	}
 	return NULL;
@@ -206,9 +221,9 @@ isInConfigFile(char *relation)
 
 
 /*
- * Load environmental parameters for SnoopDB filename: data/snoop.conf
+ * Load environmental parameters for SnoopDB filename: CF.path/CF.pg_data/configuration_filename
  *
- * Parameters: input filename, relation, delimiter
+ * Parameters: input filename, relation, delimiter, header
  */
 void
 loadEnvironment(void)
@@ -282,6 +297,16 @@ loadEnvironment(void)
 						{
 							strncpy(CF.files[pos].delimiter, args[2] + 1, size - 1);
 							CF.files[pos].delimiter[size - 2] = '\0';
+							CF.files[pos].id = val;
+						}
+					}
+					else if(strncmp(args[0], "header-", 7) == 0 && strcmp(args[1], "=") == 0)
+					{
+						int val = atoi(args[0] + 7);
+						int pos = searchSlotInConfiguration(val);
+						if( pos != -1)
+						{
+							CF.files[pos].header = atoi(args[2]);
 							CF.files[pos].id = val;
 						}
 					}
