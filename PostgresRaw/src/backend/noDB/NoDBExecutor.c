@@ -150,7 +150,6 @@ static TupleTableSlot   *generateTupleTableSlot( TupleTableSlot *ss_ScanTupleSlo
 
 static bool             NoDBCopyLoadRawBuf(NoDBScanState_t cstate);
 static int              NoDBCopyGetData(NoDBScanState_t cstate, void *databuf, int minread, int maxread);
-static bool             NoDBCopyReadLineText(NoDBScanState_t cstate);
 static void             NoDBCopyReadAttributesText(NoDBScanState_t cstate);
 static int              GetDecimalFromHex(char hex);
 
@@ -739,9 +738,10 @@ NoDBCopyGetData(NoDBScanState_t cstate, void *databuf, int minread, int maxread)
 
 /*
  * CopyReadLineText - inner loop of CopyReadLine for text mode
+ *  *DP* Based on CopyReadLineText(CopyState cstate) in src/backend/commands/copy.c
  */
 //TODO: In the previous version I had removed the csv_mode field
-static bool
+bool
 NoDBCopyReadLineText(NoDBScanState_t cstate)
 {
 	char	   *copy_raw_buf;
@@ -839,7 +839,7 @@ NoDBCopyReadLineText(NoDBScanState_t cstate)
 		prev_raw_ptr = raw_buf_ptr;
 		c = copy_raw_buf[raw_buf_ptr++];
 
-		if (cstate->csv_mode)
+		if (cstate->csv_mode) /* *DP* Based on NoDBScan.c, we are never in csv_mode */
 		{
 			/*
 			 * If character is '\\' or '\r', we may need to look ahead below.

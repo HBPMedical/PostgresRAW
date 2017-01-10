@@ -28,6 +28,7 @@ TupleTableSlot *NoDBExecPlanWithFiltersCacheOnly(NoDBScanState_t cstate, bool *p
 bool NoDBGetNextTupleFromFile(NoDBScanState_t cstate);
 bool NoDBGetNextTupleFromFileWithEOL(NoDBScanState_t cstate);
 bool NoDBTryReFillRawBuf(NoDBScanState_t cstate);
+bool NoDBCopyReadLineText(NoDBScanState_t cstate);
 
 
 #endif /* NODBEXECUTOR_H_ */

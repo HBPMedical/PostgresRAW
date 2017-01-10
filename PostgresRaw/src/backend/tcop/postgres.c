@@ -3812,6 +3812,7 @@ PostgresMain(int argc, char *argv[], const char *username)
     	if ( configurationExists() )
     	{
 			loadEnvironment();
+			fprintf(stderr,"PostgresRaw environment loaded.\n");
 //			initScanModule();
     	}
     	else

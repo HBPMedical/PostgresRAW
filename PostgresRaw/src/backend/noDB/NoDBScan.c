@@ -83,6 +83,7 @@ USE OF THIS SOFTWARE.
 
 
 #define MAX_COMMAND_SIZE 512
+#define MAX_OPTION_SIZE 50
 
 
 static const char BinarySignature[11] = "PGCOPY\n\377\r\n\0";
@@ -138,8 +139,11 @@ NoDBScanOperator_t *NoDBScanOperatorInit(ScanState *scanInfo)
     char *filename;
     char *command;
     char *delimiter;
-    int header;
+    bool header;
     char *relation = scanInfo->ss_currentRelation->rd_rel->relname.data;
+
+    char *delimiterOption;
+    char *headerOption;
 
     /* Extra check: Environment should be already loaded... */
     //TODO: update with the new version of the code that doesn't need init
@@ -150,7 +154,9 @@ NoDBScanOperator_t *NoDBScanOperatorInit(ScanState *scanInfo)
     delimiter = getDelimiter(relation);
     header = getHeader(relation);
 
+
     Assert(filename != NULL);
+    /* *DP* for this test to pass, relation must be defined in scanInfo, be present in the snoop.conf file, and the corresponding snoop parameters must be loaded correctly */
     if(delimiter == NULL)
         *delimiter = ',';
 
@@ -159,14 +165,13 @@ NoDBScanOperator_t *NoDBScanOperatorInit(ScanState *scanInfo)
 
     // Access data file using copy command: "COPY <relation> FROM '<link to data file>' WITH DELIMITER 'delimiter'"
     command = (char*)palloc(MAX_COMMAND_SIZE * sizeof(char));
-
-    char *delimiterOption;
-    char *headerOption;
+    delimiterOption = (char*)palloc(MAX_OPTION_SIZE * sizeof(char));
+    headerOption = (char*)palloc(MAX_OPTION_SIZE * sizeof(char));
 
     if ( strcmp( delimiter, "\\t") == 0  || strcmp( delimiter, "\\r") == 0 || strcmp( delimiter, "\\n") == 0)
-        sprintf(delimiterOption, "WITH DELIMITER E'%s'", delimiter);
+        sprintf(delimiterOption, "DELIMITER E'%s'", delimiter);
     else
-        sprintf(delimiterOption, "WITH DELIMITER '%s'", delimiter);
+        sprintf(delimiterOption, "DELIMITER '%s'", delimiter);
 
     /*
      * Adding support for csv files with header
@@ -177,12 +182,18 @@ NoDBScanOperator_t *NoDBScanOperatorInit(ScanState *scanInfo)
      * The HEADER option can only be used if the FORMAT 'csv' option is used, which is currently not the
      * case. Why this is and how it can be changed has to be explored. (E.g. see GetScanState below)
      */
-    if (header > 0)
-    	sprintf(headerOption, ", HEADER TRUE");
+    if (header)
+		sprintf(headerOption, ", HEADER TRUE");
     else
-    	sprintf(headerOption, ", HEADER FALSE");
+		sprintf(headerOption, ", HEADER FALSE");
 
-    sprintf(command, "COPY %s FROM '%s' %s %s;",relation, filename, delimiterOption, headerOption);
+    sprintf(command, "COPY %s FROM '%s' WITH (%s %s, NULL '');",relation, filename, delimiterOption, headerOption);
+    fprintf(stderr,"%s\n",command);
+    /* *DP* added a "NULL ''" option to the COPY statement, in order to recognize empty strings as NULL values.
+     * I do not know how this option is actually used when reading the file, but this seems to work like a charm...
+     * Note : in csv mode, '' is actually the default NULL value, but for some reason csv_mode is not used (text_mode instead)
+     * csv mode would be selected by adding a "FORMAT csv" parameter.
+     * As we use the text mode, it is possible that '\N' was previously recognised as NULL, before '' was explicitly chosen */
 
     scanOper->planCopyStmt  = GetQueryCopyStmt(command);
     scanOper->cstate        = GetScanState(scanOper->planCopyStmt, command);
@@ -715,8 +726,13 @@ GetQueryCopyStmt(const char *query_string)
 
 
 /*
+ * *DP* Based on DoCopy(const CopyStmt *stmt, const char *queryString) in src/backend/commands/copy.c
  * NoDB: We care only for the case of "delimiter"
  * (However, I did not remove the other fields in case we need them in a future version)
+ * *DP* We now also use the "header" and "null" options (see statement built in NoDBScanOperatorInit)
+ * Some possible parameters are not used for now (format, quote, escape, force_not_null...)
+ * Output parameters such as null_print, force_null, ...
+ * are not used, as postgresRAW never prints anything (only file reading)
  */
 static NoDBScanState_t
 GetScanState(const CopyStmt *stmt, const char *queryString)
@@ -753,9 +769,10 @@ GetScanState(const CopyStmt *stmt, const char *queryString)
 						 errmsg("conflicting or redundant options")));
 			format_specified = true;
 			if (strcmp(fmt, "text") == 0)
-				 /* default format */ ;
-//			else if (strcmp(fmt, "csv") == 0)
-//				cstate->csv_mode = true;
+				cstate->csv_mode = false;
+				 /* default format */
+			else if (strcmp(fmt, "csv") == 0) /* *DP* We might want to use the csv mode instead of text */
+				cstate->csv_mode = true;
 			else if (strcmp(fmt, "binary") == 0)
 				cstate->binary = true;
 			else
@@ -787,14 +804,14 @@ GetScanState(const CopyStmt *stmt, const char *queryString)
 						 errmsg("conflicting or redundant options")));
 			cstate->null_print = defGetString(defel);
 		}
-//		else if (strcmp(defel->defname, "header") == 0)
-//		{
-//			if (cstate->header_line)
-//				ereport(ERROR,
-//						(errcode(ERRCODE_SYNTAX_ERROR),
-//						 errmsg("conflicting or redundant options")));
-//			cstate->header_line = defGetBoolean(defel);
-//		}
+		else if (strcmp(defel->defname, "header") == 0)
+		{
+			if (cstate->header_line)
+				ereport(ERROR,
+						(errcode(ERRCODE_SYNTAX_ERROR),
+						 errmsg("conflicting or redundant options")));
+			cstate->header_line = defGetBoolean(defel);
+		}
 //		else if (strcmp(defel->defname, "quote") == 0)
 //		{
 //			if (cstate->quote)
@@ -811,36 +828,36 @@ GetScanState(const CopyStmt *stmt, const char *queryString)
 //						 errmsg("conflicting or redundant options")));
 //			cstate->escape = defGetString(defel);
 //		}
-		else if (strcmp(defel->defname, "force_quote") == 0)
-		{
-			if (force_quote || force_quote_all)
-				ereport(ERROR,
-						(errcode(ERRCODE_SYNTAX_ERROR),
-						 errmsg("conflicting or redundant options")));
-			if (defel->arg && IsA(defel->arg, A_Star))
-				force_quote_all = true;
-			else if (defel->arg && IsA(defel->arg, List))
-				force_quote = (List *) defel->arg;
-			else
-				ereport(ERROR,
-						(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-						 errmsg("argument to option \"%s\" must be a list of column names",
-								defel->defname)));
-		}
-		else if (strcmp(defel->defname, "force_not_null") == 0)
-		{
-			if (force_notnull)
-				ereport(ERROR,
-						(errcode(ERRCODE_SYNTAX_ERROR),
-						 errmsg("conflicting or redundant options")));
-			if (defel->arg && IsA(defel->arg, List))
-				force_notnull = (List *) defel->arg;
-			else
-				ereport(ERROR,
-						(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-						 errmsg("argument to option \"%s\" must be a list of column names",
-								defel->defname)));
-		}
+//		else if (strcmp(defel->defname, "force_quote") == 0)
+//		{
+//			if (force_quote || force_quote_all)
+//				ereport(ERROR,
+//						(errcode(ERRCODE_SYNTAX_ERROR),
+//						 errmsg("conflicting or redundant options")));
+//			if (defel->arg && IsA(defel->arg, A_Star))
+//				force_quote_all = true;
+//			else if (defel->arg && IsA(defel->arg, List))
+//				force_quote = (List *) defel->arg;
+//			else
+//				ereport(ERROR,
+//						(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+//						 errmsg("argument to option \"%s\" must be a list of column names",
+//								defel->defname)));
+//		}
+//		else if (strcmp(defel->defname, "force_not_null") == 0)
+//		{
+//			if (force_notnull)
+//				ereport(ERROR,
+//						(errcode(ERRCODE_SYNTAX_ERROR),
+//						 errmsg("conflicting or redundant options")));
+//			if (defel->arg && IsA(defel->arg, List))
+//				force_notnull = (List *) defel->arg;
+//			else
+//				ereport(ERROR,
+//						(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+//						 errmsg("argument to option \"%s\" must be a list of column names",
+//								defel->defname)));
+//		}
 		else
 			ereport(ERROR,
 					(errcode(ERRCODE_SYNTAX_ERROR),
@@ -848,37 +865,37 @@ GetScanState(const CopyStmt *stmt, const char *queryString)
 							defel->defname)));
 	}
 
+	//fprintf(stdout,"cstate->csv_mode : %s\n", cstate->csv_mode ? "True" : "False");
+
 	/*
 	 * Check for incompatible options (must do these two before inserting
 	 * defaults)
 	 */
-	if (cstate->binary && cstate->delim)
-		ereport(ERROR,
-				(errcode(ERRCODE_SYNTAX_ERROR),
-				 errmsg("cannot specify DELIMITER in BINARY mode")));
-
-	if (cstate->binary && cstate->null_print)
-		ereport(ERROR,
-				(errcode(ERRCODE_SYNTAX_ERROR),
-				 errmsg("cannot specify NULL in BINARY mode")));
+//	if (cstate->binary && cstate->delim)
+//		ereport(ERROR,
+//				(errcode(ERRCODE_SYNTAX_ERROR),
+//				 errmsg("cannot specify DELIMITER in BINARY mode")));
+//
+//	if (cstate->binary && cstate->null_print)
+//		ereport(ERROR,
+//				(errcode(ERRCODE_SYNTAX_ERROR),
+//				 errmsg("cannot specify NULL in BINARY mode")));
 
 	/* Set defaults for omitted options */
 	if (!cstate->delim)
-		cstate->delim =  "\t";
-//		cstate->delim = cstate->csv_mode ? "," : "\t";
+		cstate->delim = cstate->csv_mode ? "," : "\t";
 
 	if (!cstate->null_print)
-		cstate->null_print = "\\N";
-//		cstate->null_print = cstate->csv_mode ? "" : "\\N";
+		cstate->null_print = cstate->csv_mode ? "" : "\\N";
 	cstate->null_print_len = strlen(cstate->null_print);
 
-//	if (cstate->csv_mode)
-//	{
-//		if (!cstate->quote)
-//			cstate->quote = "\"";
-//		if (!cstate->escape)
-//			cstate->escape = cstate->quote;
-//	}
+	if (cstate->csv_mode)
+	{
+		if (!cstate->quote)
+			cstate->quote = "\"";
+		if (!cstate->escape)
+			cstate->escape = cstate->quote;
+	}
 
 	/* Only single-byte delimiter strings are supported. */
 	if (strlen(cstate->delim) != 1)
@@ -893,11 +910,11 @@ GetScanState(const CopyStmt *stmt, const char *queryString)
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 			 errmsg("COPY delimiter cannot be newline or carriage return")));
 
-	if (strchr(cstate->null_print, '\r') != NULL ||
-		strchr(cstate->null_print, '\n') != NULL)
-		ereport(ERROR,
-				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-				 errmsg("COPY null representation cannot use newline or carriage return")));
+//	if (strchr(cstate->null_print, '\r') != NULL ||
+//		strchr(cstate->null_print, '\n') != NULL)
+//		ereport(ERROR,
+//				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+//				 errmsg("COPY null representation cannot use newline or carriage return")));
 
 	/*
 	 * Disallow unsafe delimiter characters in non-CSV mode.  We can't allow
@@ -916,71 +933,71 @@ GetScanState(const CopyStmt *stmt, const char *queryString)
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("COPY delimiter cannot be \"%s\"", cstate->delim)));
 
-	/* Check header */
+//	/* Check header */
 //	if (!cstate->csv_mode && cstate->header_line)
 //	if (cstate->header_line)
 //		ereport(ERROR,
 //				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
 //				 errmsg("COPY HEADER available only in CSV mode")));
-
-	/* Check quote */
+//
+//	/* Check quote */
 //	if (!cstate->csv_mode && cstate->quote != NULL)
 //	if (cstate->quote != NULL)
 //		ereport(ERROR,
 //				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
 //				 errmsg("COPY quote available only in CSV mode")));
-
+//
 //	if (cstate->csv_mode && strlen(cstate->quote) != 1)
 //		ereport(ERROR,
 //				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
 //				 errmsg("COPY quote must be a single one-byte character")));
-
+//
 //	if (cstate->csv_mode && cstate->delim[0] == cstate->quote[0])
 //		ereport(ERROR,
 //				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 //				 errmsg("COPY delimiter and quote must be different")));
-
-	/* Check escape */
+//
+//	/* Check escape */
 //	if (!cstate->csv_mode && cstate->escape != NULL)
 //	if (cstate->escape != NULL)
 //		ereport(ERROR,
 //				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
 //				 errmsg("COPY escape available only in CSV mode")));
-
+//
 //	if (cstate->csv_mode && strlen(cstate->escape) != 1)
 //		ereport(ERROR,
 //				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
 //				 errmsg("COPY escape must be a single one-byte character")));
-
-	/* Check force_quote */
+//
+//	/* Check force_quote */
 //	if (!cstate->csv_mode && (force_quote != NIL || force_quote_all))
-	if ( (force_quote != NIL || force_quote_all))
-		ereport(ERROR,
-				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-				 errmsg("COPY force quote available only in CSV mode")));
-	if ((force_quote != NIL || force_quote_all) && is_from)
-		ereport(ERROR,
-				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-				 errmsg("COPY force quote only available using COPY TO")));
-
-	/* Check force_notnull */
+//	if ( (force_quote != NIL || force_quote_all))
+//		ereport(ERROR,
+//				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+//				 errmsg("COPY force quote available only in CSV mode")));
+//	if ((force_quote != NIL || force_quote_all) && is_from)
+//		ereport(ERROR,
+//				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+//				 errmsg("COPY force quote only available using COPY TO")));
+//
+//	/* Check force_notnull */
 //	if (!cstate->csv_mode && force_notnull != NIL)
-	if (force_notnull != NIL)
-		ereport(ERROR,
-				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-				 errmsg("COPY force not null available only in CSV mode")));
-	if (force_notnull != NIL && !is_from)
-		ereport(ERROR,
-				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-			  errmsg("COPY force not null only available using COPY FROM")));
-
-	/* Don't allow the delimiter to appear in the null string. */
-	if (strchr(cstate->null_print, cstate->delim[0]) != NULL)
-		ereport(ERROR,
-				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-		errmsg("COPY delimiter must not appear in the NULL specification")));
-
-	/* Don't allow the CSV quote char to appear in the null string. */
+//	if (force_notnull != NIL)
+//		ereport(ERROR,
+//				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+//				 errmsg("COPY force not null available only in CSV mode")));
+//	if (force_notnull != NIL && !is_from)
+//		ereport(ERROR,
+//				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+//			  errmsg("COPY force not null only available using COPY FROM")));
+//
+//	/* Don't allow the delimiter to appear in the null string. */
+//	if (strchr(cstate->null_print, cstate->delim[0]) != NULL)
+//		ereport(ERROR,
+//				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+//		errmsg("COPY delimiter must not appear in the NULL specification")));
+//
+//	/* Don't allow the CSV quote char to appear in the null string. */ /* *DP* quote has not been defined for PostgresRAW */
 //	if (cstate->csv_mode &&
 //		strchr(cstate->null_print, cstate->quote[0]) != NULL)
 //		ereport(ERROR,
@@ -1041,82 +1058,102 @@ GetScanState(const CopyStmt *stmt, const char *queryString)
 //					 errmsg("table \"%s\" does not have OIDs",
 //							RelationGetRelationName(cstate->rel))));
 	}
-	else /* SnoopDB: Failed to define relation in the input command */
+	else /* i.e. !(stmt->relation)
+		  * SnoopDB: Failed to define relation in the input command
+		  * *DP* Pretty sure this is not used in the case of PostgresRAW :
+		  * the code below makes sense only in case of an original COPY statement
+		  * A relation name was not found by GetQueryCopyStmt() when parsing the "command"
+		  * string and building a CopyStmt (the "*stmt" arg of this function)
+		  * In the real COPY case, it means we have a "command" like COPY (SELECT stmt) TO output
+		  * In case of PostgresRAW :
+		  * NoDBScanOperatorInit created the "command"'s COPY statement with a well-defined
+		  * "relation" parameter. If the relation name was not found in snoop.conf, an error
+		  * should have occurred at the beginning of NoDBScanOperatorInit.
+		  * This does not however prove that the relation exists in DB. Maybe GetQueryCopyStmt()
+		  * returns a CopyStmt* ("stmt" arg of this function) with an empty ->relation field when
+		  * the relation does not exist in the database ???
+		  * Still, the following code does not deal with this case.
+		  **/
 	{
-		List	   *rewritten;
-		Query	   *query;
-		PlannedStmt *plan;
-		DestReceiver *dest;
-
-		Assert(!is_from);
-		cstate->rel = NULL;
-
+		fprintf(stderr,"No relation defined in NoDB copy statement, case not handled\n");
+	}
+//		List	   *rewritten;
+//		Query	   *query;
+//		PlannedStmt *plan;
+//		DestReceiver *dest;
+//
+//		Assert(!is_from);
+//		cstate->rel = NULL;
+//
 //		/* Don't allow COPY w/ OIDs from a select */
 //		if (cstate->oids)
 //			ereport(ERROR,
 //					(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
 //					 errmsg("COPY (SELECT) WITH OIDS is not supported")));
-
-		/*
-		 * Run parse analysis and rewrite.	Note this also acquires sufficient
-		 * locks on the source table(s).
-		 *
-		 * Because the parser and planner tend to scribble on their input, we
-		 * make a preliminary copy of the source querytree.  This prevents
-		 * problems in the case that the COPY is in a portal or plpgsql
-		 * function and is executed repeatedly.  (See also the same hack in
-		 * DECLARE CURSOR and PREPARE.)  XXX FIXME someday.
-		 */
-		rewritten = pg_analyze_and_rewrite((Node *) copyObject(stmt->query),
-										   queryString, NULL, 0);
-
-		/* We don't expect more or less than one result query */
-		if (list_length(rewritten) != 1)
-			elog(ERROR, "unexpected rewrite result");
-
-		query = (Query *) linitial(rewritten);
-		Assert(query->commandType == CMD_SELECT);
-		Assert(query->utilityStmt == NULL);
-
-		/* Query mustn't use INTO, either */
-		if (query->intoClause)
-			ereport(ERROR,
-					(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-					 errmsg("COPY (SELECT INTO) is not supported")));
-
-		/* plan the query */
-		plan = planner(query, 0, NULL);
-
-		/*
-		 * Use a snapshot with an updated command ID to ensure this query sees
-		 * results of any previously executed queries.
-		 */
-		PushUpdatedSnapshot(GetActiveSnapshot());
-
-		/* Create dest receiver for COPY OUT */
-		dest = CreateDestReceiver(DestCopyOut);
-		((DR_copy *) dest)->cstate = cstate;
-
-		/* Create a QueryDesc requesting no output */
-		cstate->queryDesc = CreateQueryDesc(plan, queryString,
-											GetActiveSnapshot(),
-											InvalidSnapshot,
-											dest, NULL, 0);
-
-		/*
-		 * Call ExecutorStart to prepare the plan for execution.
-		 *
-		 * ExecutorStart computes a result tupdesc for us
-		 */
-		ExecutorStart(cstate->queryDesc, 0);
-
-		tupDesc = cstate->queryDesc->tupDesc;
-	}
+//
+//		/*
+//		 * Run parse analysis and rewrite.	Note this also acquires sufficient
+//		 * locks on the source table(s).
+//		 *
+//		 * Because the parser and planner tend to scribble on their input, we
+//		 * make a preliminary copy of the source querytree.  This prevents
+//		 * problems in the case that the COPY is in a portal or plpgsql
+//		 * function and is executed repeatedly.  (See also the same hack in
+//		 * DECLARE CURSOR and PREPARE.)  XXX FIXME someday.
+//		 */
+//		 /* *DP* Accessing the subquery ? (i.e. SELECT stmt of "COPY (SELECT stmt) TO output") */
+//		rewritten = pg_analyze_and_rewrite((Node *) copyObject(stmt->query),
+//										   queryString, NULL, 0);
+//
+//		/* We don't expect more or less than one result query */
+//		if (list_length(rewritten) != 1)
+//			elog(ERROR, "unexpected rewrite result");
+//
+//		query = (Query *) linitial(rewritten);
+//		Assert(query->commandType == CMD_SELECT);
+//		Assert(query->utilityStmt == NULL);
+//
+//		/* Query mustn't use INTO, either */
+//		if (query->intoClause)
+//			ereport(ERROR,
+//					(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+//					 errmsg("COPY (SELECT INTO) is not supported")));
+//
+//		/* plan the query */
+//		plan = planner(query, 0, NULL);
+//
+//		/*
+//		 * Use a snapshot with an updated command ID to ensure this query sees
+//		 * results of any previously executed queries.
+//		 */
+//		PushUpdatedSnapshot(GetActiveSnapshot());
+//
+//		/* Create dest receiver for COPY OUT */
+//		dest = CreateDestReceiver(DestCopyOut);
+//		((DR_copy *) dest)->cstate = cstate;
+//
+//		/* Create a QueryDesc requesting no output */
+//		cstate->queryDesc = CreateQueryDesc(plan, queryString,
+//											GetActiveSnapshot(),
+//											InvalidSnapshot,
+//											dest, NULL, 0);
+//
+//		/*
+//		 * Call ExecutorStart to prepare the plan for execution.
+//		 *
+//		 * ExecutorStart computes a result tupdesc for us
+//		 */
+//		ExecutorStart(cstate->queryDesc, 0);
+//
+//		tupDesc = cstate->queryDesc->tupDesc;
+//	}
 
 	/* Generate or convert list of attributes to process */
 	cstate->attnumlist = CopyGetAttnums(tupDesc, cstate->rel, attnamelist);
 
 	num_phys_attrs = tupDesc->natts;
+
+	/* *DP* FORCE_QUOTE option : only for COPY .. TO .. statements */
 //	/* Convert FORCE QUOTE name list to per-column flags, check validity */
 //	cstate->force_quote_flags = (bool *) palloc0(num_phys_attrs * sizeof(bool));
 //	if (force_quote_all)
@@ -1192,6 +1229,19 @@ GetScanState(const CopyStmt *stmt, const char *queryString)
 
 	cstate->copy_dest = COPY_FILE;		/* default */
 	cstate->filename = stmt->filename;
+
+//	if (is_from)
+//		CopyFrom(cstate);		/* copy from file to database */
+//	else
+//		DoCopyTo(cstate);		/* copy from database to file */
+
+	/* *DP* The original query processing for real COPY statements was done above,
+	 * but it is just an init for PostgresRAW
+	 * The GetScanExecStatusStmt function below is based on CopyFrom, and it basically
+	 * does the file reading. Thus the lock obtained here on the corresponding table is
+	 * not valid anymore when GetScanExecStatusStmt is called (released 10 lines below)
+	 * No problem as it was not actually needed ? (Files are read-only in PostgresRAW, afaik.)
+	 */
 
 	//Close Heap before proceeding... (We don't need it any more)
 	/*
@@ -1458,6 +1508,7 @@ CopyGetData(NoDBScanState_t cstate, void *databuf, int minread, int maxread)
 
 /*
  * Prepare struct with query execution status
+ * *DP* Based on copyFrom(CopyState cstate) in src/backend/commands/copy.c
  */
 static NoDBScanExecStatusStmt_t
 GetScanExecStatusStmt(NoDBScanState_t cstate)
@@ -1666,7 +1717,7 @@ GetScanExecStatusStmt(NoDBScanState_t cstate)
 	ExecBSInsertTriggers(cstate->estate, status.resultRelInfo);
 
 	if (!cstate->binary)
-		status.file_has_oids = false;	// must rely on user to tell us...
+		status.file_has_oids = false;
 //		status.file_has_oids = cstate->oids;	// must rely on user to tell us...
 	else
 	{
@@ -1715,7 +1766,7 @@ GetScanExecStatusStmt(NoDBScanState_t cstate)
 	cstate->fe_eof = false;
 	cstate->eol_type = EOL_UNKNOWN;
 //	cstate->cur_relname = RelationGetRelationName(cstate->rel);
-//	cstate->cur_lineno = 0;
+	cstate->cur_lineno = 0; /* *DP* incremented in NoDBExecutor, so why not initialise it... */
 //	cstate->cur_attname = NULL;
 //	cstate->cur_attval = NULL;
 
@@ -1729,6 +1780,15 @@ GetScanExecStatusStmt(NoDBScanState_t cstate)
 	status.errcontext.arg = (void *) cstate;
 	status.errcontext.previous = error_context_stack;
 	error_context_stack = &status.errcontext;
+
+	/* on input just throw the header line away
+	 * *DP* For PostgresRAW : if file in actually opened only here and then read
+	 * sequentially until EOF, this should be sufficient to ignore the header line */
+	if (cstate->header_line)
+	{
+		cstate->cur_lineno++;
+		NoDBCopyReadLineText(cstate);
+	}
 
 	/*Allocate memory*/
 	cstate->values = (Datum *) palloc(status.num_phys_attrs * sizeof(Datum));

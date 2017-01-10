@@ -1,7 +1,7 @@
 To install PostgresRaw you have to follow the same steps as in PostgreSQL:
 
 When building with GCC 4.8 or later, we have to disable optimisations otherwise postgres fails to run properly.
-a) CFLAGS=-O0 ./congfigure --prefix=<installation_path>
+a) CFLAGS=-O0 ./configure --prefix=<installation_path>
 b) make
 c) make install
 

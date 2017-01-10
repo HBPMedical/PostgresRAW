@@ -34,7 +34,7 @@ typedef struct InputFile
 	char    filename[MAX_FILENAME];
 	char    relation[MAX_RELATION_NAME];
 	char    delimiter[5];
-	int		header;
+	bool    header;
 	int     id;
 
 }InputFile;
@@ -54,7 +54,7 @@ extern char *configuration_filename;
 
 char    *getInputFilename(char *relation);
 char    *getDelimiter(char *relation);
-char    *getHeader(char *relation);
+bool    getHeader(char *relation);
 bool    isBuild(void);
 bool    isLoaded(void);
 bool    configurationExists(void);

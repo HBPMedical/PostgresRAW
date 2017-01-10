@@ -89,11 +89,11 @@ char *getDelimiter(char *relation)
 	return NULL;
 }
 
-char *getHeader(char *relation)
+bool getHeader(char *relation)
 {
 	int i;
 	if(CF.loaded != true)
-		return NULL;
+		return false;
 	for ( i = 0; i < NUMBER_OF_RELATIONS; i++){
 		if( CF.files[i].id != -1)
 		{
@@ -101,7 +101,7 @@ char *getHeader(char *relation)
 				return CF.files[i].header;
 		}
 	}
-	return NULL;
+	return false;
 }
 /*
 bool isBuild(void)
@@ -170,7 +170,9 @@ printConfiguration(void)
 //			fprintf(stdout,"ID : {%d} Pos = {%d}\n", CF.files[i].id, i);
 			fprintf(stdout,"%d) File: %s\n",(i+1), CF.files[i].filename);
 			fprintf(stdout,"Relation: %s\n", CF.files[i].relation);
-//			fprintf(stdout,"Delimiter : %s\n", CF.files[i].delimiter);
+			fprintf(stdout,"Delimiter : %s\n", CF.files[i].delimiter);
+			fprintf(stdout,"Header : %s\n", CF.files[i].header ? "True" : "False");
+			fflush(stdout);
 		}
 	}
 	fprintf(stdout,"\n\n");
@@ -306,7 +308,15 @@ loadEnvironment(void)
 						int pos = searchSlotInConfiguration(val);
 						if( pos != -1)
 						{
-							CF.files[pos].header = atoi(args[2]);
+							char arg2[size-1];
+							strncpy(arg2, args[2] + 1, size - 1);
+							arg2[size - 2] = '\0';
+							if (strcmp( arg2, "True") == 0){
+								CF.files[pos].header = true;
+							}
+							else {
+								CF.files[pos].header = false;
+							}
 							CF.files[pos].id = val;
 						}
 					}
@@ -323,7 +333,7 @@ loadEnvironment(void)
 	Assert( CF.how_many < NUMBER_OF_RELATIONS);
 	Assert( checkConfiguration() != -1);
 
-//	printConfiguration();
+	//printConfiguration();
 }
 
 
