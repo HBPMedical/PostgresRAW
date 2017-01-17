@@ -156,7 +156,8 @@ NoDBScanOperator_t *NoDBScanOperatorInit(ScanState *scanInfo)
 
 
     Assert(filename != NULL);
-    /* *DP* for this test to pass, relation must be defined in scanInfo, be present in the snoop.conf file, and the corresponding snoop parameters must be loaded correctly */
+    /* *DP* for this test to pass, relation must be defined in scanInfo, be present in the snoop.conf file,
+     * and the corresponding snoop parameters must be loaded correctly */
     if(delimiter == NULL)
         *delimiter = ',';
 
@@ -174,26 +175,26 @@ NoDBScanOperator_t *NoDBScanOperatorInit(ScanState *scanInfo)
         sprintf(delimiterOption, "DELIMITER '%s'", delimiter);
 
     /*
-     * Adding support for csv files with header
-     * The pgsql COPY command apparently used here has an option HEADER which leads to the omission of
-     * the file's first line.
-     * There is no option for multiline headers, so if the code relies on the COPY command, multiline
-     * headers should not be supported.
-     * The HEADER option can only be used if the FORMAT 'csv' option is used, which is currently not the
-     * case. Why this is and how it can be changed has to be explored. (E.g. see GetScanState below)
+     * *DP* Adding support for csv files with header.
+     * Using the original structure of the COPY code (in csv mode), this option
+     * defines a bool that is later used to ignore the first line of the file
      */
     if (header)
-		sprintf(headerOption, ", HEADER TRUE");
+		sprintf(headerOption, "HEADER TRUE");
     else
-		sprintf(headerOption, ", HEADER FALSE");
+		sprintf(headerOption, "HEADER FALSE");
 
-    sprintf(command, "COPY %s FROM '%s' WITH (%s %s, NULL '');",relation, filename, delimiterOption, headerOption);
+    sprintf(command, "COPY %s FROM '%s' WITH (FORMAT csv, %s, %s);",relation, filename, delimiterOption, headerOption);
     fprintf(stderr,"%s\n",command);
-    /* *DP* added a "NULL ''" option to the COPY statement, in order to recognize empty strings as NULL values.
-     * I do not know how this option is actually used when reading the file, but this seems to work like a charm...
-     * Note : in csv mode, '' is actually the default NULL value, but for some reason csv_mode is not used (text_mode instead)
-     * csv mode would be selected by adding a "FORMAT csv" parameter.
-     * As we use the text mode, it is possible that '\N' was previously recognised as NULL, before '' was explicitly chosen */
+    /* *DP* csv mode is now selected ("FORMAT csv" parameter)
+     * In csv mode, the following default values are used :
+     * '' (empty string) as NULL value
+     * '"' (double quote) as quote character
+     * '"' (double quote) as escape character in quoted field
+     *
+     * Text mode was previously used, for which defaults are
+     * '\N' for NULL values and \t (tab) as delimiter
+     * HEADER, quote and escape support is not available in text mode */
 
     scanOper->planCopyStmt  = GetQueryCopyStmt(command);
     scanOper->cstate        = GetScanState(scanOper->planCopyStmt, command);
@@ -812,22 +813,22 @@ GetScanState(const CopyStmt *stmt, const char *queryString)
 						 errmsg("conflicting or redundant options")));
 			cstate->header_line = defGetBoolean(defel);
 		}
-//		else if (strcmp(defel->defname, "quote") == 0)
-//		{
-//			if (cstate->quote)
-//				ereport(ERROR,
-//						(errcode(ERRCODE_SYNTAX_ERROR),
-//						 errmsg("conflicting or redundant options")));
-//			cstate->quote = defGetString(defel);
-//		}
-//		else if (strcmp(defel->defname, "escape") == 0)
-//		{
-//			if (cstate->escape)
-//				ereport(ERROR,
-//						(errcode(ERRCODE_SYNTAX_ERROR),
-//						 errmsg("conflicting or redundant options")));
-//			cstate->escape = defGetString(defel);
-//		}
+		else if (strcmp(defel->defname, "quote") == 0)
+		{
+			if (cstate->quote)
+				ereport(ERROR,
+						(errcode(ERRCODE_SYNTAX_ERROR),
+						 errmsg("conflicting or redundant options")));
+			cstate->quote = defGetString(defel);
+		}
+		else if (strcmp(defel->defname, "escape") == 0)
+		{
+			if (cstate->escape)
+				ereport(ERROR,
+						(errcode(ERRCODE_SYNTAX_ERROR),
+						 errmsg("conflicting or redundant options")));
+			cstate->escape = defGetString(defel);
+		}
 //		else if (strcmp(defel->defname, "force_quote") == 0)
 //		{
 //			if (force_quote || force_quote_all)
@@ -926,52 +927,51 @@ GetScanState(const CopyStmt *stmt, const char *queryString)
 	 * future-proofing.  Likewise we disallow all digits though only octal
 	 * digits are actually dangerous.
 	 */
-//	if (!cstate->csv_mode &&
-	if (strchr("\\.abcdefghijklmnopqrstuvwxyz0123456789",
+	if (!cstate->csv_mode &&
+		strchr("\\.abcdefghijklmnopqrstuvwxyz0123456789",
 			   cstate->delim[0]) != NULL)
 		ereport(ERROR,
 				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
 				 errmsg("COPY delimiter cannot be \"%s\"", cstate->delim)));
 
-//	/* Check header */
-//	if (!cstate->csv_mode && cstate->header_line)
-//	if (cstate->header_line)
-//		ereport(ERROR,
-//				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-//				 errmsg("COPY HEADER available only in CSV mode")));
-//
-//	/* Check quote */
-//	if (!cstate->csv_mode && cstate->quote != NULL)
-//	if (cstate->quote != NULL)
-//		ereport(ERROR,
-//				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-//				 errmsg("COPY quote available only in CSV mode")));
-//
-//	if (cstate->csv_mode && strlen(cstate->quote) != 1)
-//		ereport(ERROR,
-//				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-//				 errmsg("COPY quote must be a single one-byte character")));
-//
-//	if (cstate->csv_mode && cstate->delim[0] == cstate->quote[0])
-//		ereport(ERROR,
-//				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
-//				 errmsg("COPY delimiter and quote must be different")));
-//
-//	/* Check escape */
-//	if (!cstate->csv_mode && cstate->escape != NULL)
-//	if (cstate->escape != NULL)
-//		ereport(ERROR,
-//				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-//				 errmsg("COPY escape available only in CSV mode")));
-//
-//	if (cstate->csv_mode && strlen(cstate->escape) != 1)
-//		ereport(ERROR,
-//				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-//				 errmsg("COPY escape must be a single one-byte character")));
-//
+	/* Check header */
+	if (!cstate->csv_mode && cstate->header_line)
+	if (cstate->header_line)
+		ereport(ERROR,
+				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+				 errmsg("COPY HEADER available only in CSV mode")));
+
+	/* Check quote */
+	if (!cstate->csv_mode && cstate->quote != NULL)
+	if (cstate->quote != NULL)
+		ereport(ERROR,
+				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+				 errmsg("COPY quote available only in CSV mode")));
+
+	if (cstate->csv_mode && strlen(cstate->quote) != 1)
+		ereport(ERROR,
+				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+				 errmsg("COPY quote must be a single one-byte character")));
+
+	if (cstate->csv_mode && cstate->delim[0] == cstate->quote[0])
+		ereport(ERROR,
+				(errcode(ERRCODE_INVALID_PARAMETER_VALUE),
+				 errmsg("COPY delimiter and quote must be different")));
+
+	/* Check escape */
+	if (!cstate->csv_mode && cstate->escape != NULL)
+	if (cstate->escape != NULL)
+		ereport(ERROR,
+				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+				 errmsg("COPY escape available only in CSV mode")));
+
+	if (cstate->csv_mode && strlen(cstate->escape) != 1)
+		ereport(ERROR,
+				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+				 errmsg("COPY escape must be a single one-byte character")));
+
 //	/* Check force_quote */
 //	if (!cstate->csv_mode && (force_quote != NIL || force_quote_all))
-//	if ( (force_quote != NIL || force_quote_all))
 //		ereport(ERROR,
 //				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
 //				 errmsg("COPY force quote available only in CSV mode")));
@@ -982,7 +982,6 @@ GetScanState(const CopyStmt *stmt, const char *queryString)
 //
 //	/* Check force_notnull */
 //	if (!cstate->csv_mode && force_notnull != NIL)
-//	if (force_notnull != NIL)
 //		ereport(ERROR,
 //				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
 //				 errmsg("COPY force not null available only in CSV mode")));
@@ -997,12 +996,12 @@ GetScanState(const CopyStmt *stmt, const char *queryString)
 //				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
 //		errmsg("COPY delimiter must not appear in the NULL specification")));
 //
-//	/* Don't allow the CSV quote char to appear in the null string. */ /* *DP* quote has not been defined for PostgresRAW */
-//	if (cstate->csv_mode &&
-//		strchr(cstate->null_print, cstate->quote[0]) != NULL)
-//		ereport(ERROR,
-//				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
-//				 errmsg("CSV quote character must not appear in the NULL specification")));
+	/* Don't allow the CSV quote char to appear in the null string. */
+	if (cstate->csv_mode &&
+		strchr(cstate->null_print, cstate->quote[0]) != NULL)
+		ereport(ERROR,
+				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
+				 errmsg("CSV quote character must not appear in the NULL specification")));
 
 	/* Disallow file COPY except to superusers. */
 	if (!pipe && !superuser())

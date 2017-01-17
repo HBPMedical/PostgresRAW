@@ -151,6 +151,7 @@ static TupleTableSlot   *generateTupleTableSlot( TupleTableSlot *ss_ScanTupleSlo
 static bool             NoDBCopyLoadRawBuf(NoDBScanState_t cstate);
 static int              NoDBCopyGetData(NoDBScanState_t cstate, void *databuf, int minread, int maxread);
 static void             NoDBCopyReadAttributesText(NoDBScanState_t cstate);
+static void             NoDBCopyReadAttributesCSV(NoDBScanState_t cstate);
 static int              GetDecimalFromHex(char hex);
 
 static bool             NoDBCopyReadLineTextWithEOL(NoDBScanState_t cstate);
@@ -193,7 +194,11 @@ TupleTableSlot *NoDBExecPlan(NoDBScanState_t cstate, bool *pass)
 	// Read attributes With file
 	if ( NoDBColVectorSize(plan->readPostFilterWithFile) > 0 )
 	{
-        NoDBCopyReadAttributesText(cstate);
+        //NoDBCopyReadAttributesText(cstate);
+		if (cstate->csv_mode)
+			NoDBCopyReadAttributesCSV(cstate);
+		else
+			NoDBCopyReadAttributesText(cstate);
         NoDBGetValues(cstate, plan->convertPostFilter);
 	}
 	else
@@ -255,7 +260,11 @@ TupleTableSlot *NoDBExecPlanWithFilters(NoDBScanState_t cstate, bool *pass)
 	// Read attributes With file
 	if ( NoDBColVectorSize(plan->readPreFilterWithFile) > 0 )
 	{
-        NoDBCopyReadAttributesText(cstate);
+        //NoDBCopyReadAttributesText(cstate);
+		if (cstate->csv_mode)
+			NoDBCopyReadAttributesCSV(cstate);
+		else
+			NoDBCopyReadAttributesText(cstate);
         NoDBGetValues(cstate, plan->convertPreFilter);
 	}
 	else
@@ -288,7 +297,11 @@ TupleTableSlot *NoDBExecPlanWithFilters(NoDBScanState_t cstate, bool *pass)
 		// Read attributes With file
 	    if ( NoDBColVectorSize(plan->readPostFilterWithFile) > 0 )
 	    {
-	        NoDBCopyReadAttributesText(cstate);
+	        //NoDBCopyReadAttributesText(cstate);
+	        if (cstate->csv_mode)
+				NoDBCopyReadAttributesCSV(cstate);
+	        else
+				NoDBCopyReadAttributesText(cstate);
 	        NoDBGetValues(cstate, plan->readPostFilterWithFile);
 	    }
 	    else
@@ -839,7 +852,7 @@ NoDBCopyReadLineText(NoDBScanState_t cstate)
 		prev_raw_ptr = raw_buf_ptr;
 		c = copy_raw_buf[raw_buf_ptr++];
 
-		if (cstate->csv_mode) /* *DP* Based on NoDBScan.c, we are never in csv_mode */
+		if (cstate->csv_mode)
 		{
 			/*
 			 * If character is '\\' or '\r', we may need to look ahead below.
@@ -1116,13 +1129,14 @@ not_end_of_copy:
  * The return value is the number of fields actually read.	(We error out
  * if this would exceed maxfields, which is the length of fieldvals[].)
  */
-//Modified to collect pointers for NoDB
-//Parse only useful attributes (up to lastfield)
+// *DP* Based on CopyReadAttributesText in copy.c ; used only in text mode
+// Modified to collect pointers for NoDB
+// Parse only useful attributes (up to lastfield)
 static void
 NoDBCopyReadAttributesText(NoDBScanState_t cstate)
 {
-	char		delimc;
-	int		fieldno;
+	char		delimc = cstate->delim[0];
+	int			fieldno;
 	char	   *output_ptr;
 	char	   *cur_ptr;
 	char	   *line_end_ptr;
@@ -1139,7 +1153,6 @@ NoDBCopyReadAttributesText(NoDBScanState_t cstate)
 //		return;
 //	}
 
-	delimc = cstate->delim[0];
 	total_length = 0;
 	maxfields = cstate->nfields;
 	lastfield = cstate->lastfield;
@@ -1362,6 +1375,193 @@ NoDBCopyReadAttributesText(NoDBScanState_t cstate)
 	/* Clean up state of attribute_buf */
 	output_ptr--;
 	Assert(*output_ptr == '\0');
+}
+
+/*
+ * Parse the current line into separate attributes (fields),
+ * performing de-escaping as needed.  This has exactly the same API as
+ * CopyReadAttributesText, except we parse the fields according to
+ * "standard" (i.e. common) CSV usage.
+ */
+// *DP* Based on CopyReadAttributesText in copy.c ; used only in csv_mode
+// Modified to collect pointers for NoDB
+static void
+NoDBCopyReadAttributesCSV(NoDBScanState_t cstate)
+{
+	char		delimc = cstate->delim[0];
+	char		quotec = cstate->quote[0];
+	char		escapec = cstate->escape[0];
+	int			fieldno;
+	char	   *output_ptr;
+	char	   *cur_ptr;
+	char	   *line_end_ptr;
+
+	// Added for NoDB
+	int total_length = 0;
+	int maxfields = cstate->nfields;
+	int lastfield = cstate->lastfield;
+	char **fieldvals = cstate->field_strings;
+
+	/*
+	 * We need a special case for zero-column tables: check that the input
+	 * line is empty, and return.
+	 */
+	if (maxfields <= 0)
+	{
+		if (cstate->line_buf.len != 0)
+			ereport(ERROR,
+					(errcode(ERRCODE_BAD_COPY_FILE_FORMAT),
+					 errmsg("extra data after last expected column")));
+		return;
+	}
+
+	resetStringInfo(&cstate->attribute_buf);
+
+	/*
+	 * The de-escaped attributes will certainly not be longer than the input
+	 * data line, so we can just force attribute_buf to be large enough and
+	 * then transfer data without any checks for enough space.	We need to do
+	 * it this way because enlarging attribute_buf mid-stream would invalidate
+	 * pointers already stored into fieldvals[].
+	 */
+	if (cstate->attribute_buf.maxlen <= cstate->line_buf.len)
+		enlargeStringInfo(&cstate->attribute_buf, cstate->line_buf.len);
+	output_ptr = cstate->attribute_buf.data;
+
+	/* set pointer variables for loop */
+	cur_ptr = cstate->line_buf.data;
+	line_end_ptr = cstate->line_buf.data + cstate->line_buf.len;
+
+	/* Outer loop iterates over fields */
+	fieldno = 0;
+	for (;;)
+	{
+		bool		found_delim = false;
+		bool		saw_quote = false;
+		char	   *start_ptr;
+		char	   *end_ptr;
+		int			input_len;
+
+		/* Make sure space remains in fieldvals[] */
+		if (fieldno >= maxfields)
+			ereport(ERROR,
+					(errcode(ERRCODE_BAD_COPY_FILE_FORMAT),
+					 errmsg("extra data after last expected column")));
+
+		/* Remember start of field on both input and output sides */
+		start_ptr = cur_ptr;
+		fieldvals[fieldno] = output_ptr;
+
+		/*
+		 * Scan data for field,
+		 *
+		 * The loop starts in "not quote" mode and then toggles between that
+		 * and "in quote" mode. The loop exits normally if it is in "not
+		 * quote" mode and a delimiter or line end is seen.
+		 */
+		for (;;)
+		{
+			char		c;
+
+			/* Not in quote */
+			for (;;)
+			{
+				end_ptr = cur_ptr;
+				if (cur_ptr >= line_end_ptr)
+					goto endfield;
+				c = *cur_ptr++;
+				/* unquoted field delimiter */
+				if (c == delimc)
+				{
+					found_delim = true;
+					goto endfield;
+				}
+				/* start of quoted field (or part of field) */
+				if (c == quotec)
+				{
+					saw_quote = true;
+					break;
+				}
+				/* Add c to output string */
+				*output_ptr++ = c;
+			}
+
+			/* In quote */
+			for (;;)
+			{
+				end_ptr = cur_ptr;
+				if (cur_ptr >= line_end_ptr)
+					ereport(ERROR,
+							(errcode(ERRCODE_BAD_COPY_FILE_FORMAT),
+							 errmsg("unterminated CSV quoted field")));
+
+				c = *cur_ptr++;
+
+				/* escape within a quoted field */
+				if (c == escapec)
+				{
+					/*
+					 * peek at the next char if available, and escape it if it
+					 * is an escape char or a quote char
+					 */
+					if (cur_ptr < line_end_ptr)
+					{
+						char		nextc = *cur_ptr;
+
+						if (nextc == escapec || nextc == quotec)
+						{
+							*output_ptr++ = nextc;
+							cur_ptr++;
+							continue;
+						}
+					}
+				}
+
+				/*
+				 * end of quoted field. Must do this test after testing for
+				 * escape in case quote char and escape char are the same
+				 * (which is the common case).
+				 */
+				if (c == quotec)
+					break;
+
+				/* Add c to output string */
+				*output_ptr++ = c;
+			}
+		}
+endfield:
+
+		/* Terminate attribute value in output area */
+		*output_ptr++ = '\0';
+
+		/* Check whether raw input matched null marker */
+		input_len = end_ptr - start_ptr;
+		if (!saw_quote && input_len == cstate->null_print_len &&
+			strncmp(start_ptr, cstate->null_print, input_len) == 0)
+			fieldvals[fieldno] = NULL;
+
+		// Added for NoDB
+		total_length += input_len;
+		cstate->attributes[fieldno + 1].pointer = total_length + 1;
+		cstate->attributes[fieldno].width = cstate->attributes[fieldno + 1].pointer - cstate->attributes[fieldno].pointer - 1;
+		if ( fieldno == lastfield)
+			break;
+		total_length++;
+
+		fieldno++;
+
+		/* Done if we hit EOL instead of a delim */
+		if (!found_delim)
+			break;
+	}
+
+	/* Clean up state of attribute_buf */
+	output_ptr--;
+	Assert(*output_ptr == '\0');
+	// Removed for NoDB
+	//cstate->attribute_buf.len = (output_ptr - cstate->attribute_buf.data);
+
+	//return fieldno;
 }
 
 /*
