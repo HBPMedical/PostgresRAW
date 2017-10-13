@@ -113,12 +113,10 @@ static bool             CopyGetInt32(NoDBScanState_t cstate, int32 *val);
 
 
 static ScanState        *getProperScanState(PlanState *planstate);
-static List             *traverseSubPlans(List *plans, PlannedStmt *top, List *ancestors);
-static List             *traverseMemberNodes(List *plans, PlanState **planstate, Plan *outer_plan, PlannedStmt *top, List *ancestors);
+static List             *traverseSubPlans(List *plans, PlannedStmt *top, List *ancestors, ExplainState *es);
+static List             *traverseMemberNodes(List *plans, PlanState **planstate, Plan *outer_plan, PlannedStmt *top, List *ancestors, ExplainState *es);
 static void             traverseQual(List *qual, Plan *plan, Plan *outer_plan, PlannedStmt *topPlan, PlanState *planstate, List* ancestors);
 static void             recompute_limits(LimitState *node);
-
-static bool				NoDBExplainPreScanNode(PlanState *planstate, Bitmapset **rels_used);
 
 
 
@@ -1900,11 +1898,11 @@ getProperScanState(PlanState *planstate)
  * Search through a PlanState tree for a scan nodes and update Tag to newTag.
  * Based on ExplainNode (commnad/explain.c)
  * Currently this aply only to SeqScan.
- * TODO: Change so as upadate other nodes as well (e.g. IndexSan if needed) + Scan to different table ==> different policy!!!
+ * TODO: Change so as update other nodes as well (e.g. IndexSan if needed) + Scan to different table ==> different policy!!!
  */
 
 List *
-traversePlanTree(Plan *plan, PlanState *planstate, Plan *outer_plan, PlannedStmt *topPlan, List *ancestors)
+traversePlanTree(Plan *plan, PlanState *planstate, Plan *outer_plan, PlannedStmt *topPlan, List *ancestors, ExplainState *es)
 {
 		List *planstateList = NIL;
 		List *tmpList = NIL;
@@ -1927,7 +1925,24 @@ traversePlanTree(Plan *plan, PlanState *planstate, Plan *outer_plan, PlannedStmt
 				if (plan->qual)
 				{
 					changeParseStatus(PS_filterList);
-					traverseQual(plan->qual, plan, NULL, topPlan, planstate, ancestors);
+
+//					traverseQual(plan->qual, plan, NULL, topPlan, planstate, ancestors);
+
+					/* No work if empty qual */
+					if (plan->qual != NIL) {
+						Node	   *node;
+						List	   *context;
+
+						/* Convert AND list to explicit AND */
+						node = (Node *) make_ands_explicit(plan->qual);
+
+						// TODO Temporary solution for memory context problem
+						set_deparse_context_planstate_temp(es->deparse_cxt, (Node *) planstate, ancestors, &context);
+
+						/* Deparse the expression */
+						deparse_expression(node, context, false, false);
+					}
+
 					changeParseStatus(PS_idle);
 				}
 
@@ -1976,7 +1991,7 @@ traversePlanTree(Plan *plan, PlanState *planstate, Plan *outer_plan, PlannedStmt
 		if (plan->initPlan) //PlanState here
 		{
 			ancestors = lcons(planstate, ancestors);
-			tmpList = traverseSubPlans(planstate->initPlan, topPlan, ancestors);
+			tmpList = traverseSubPlans(planstate->initPlan, topPlan, ancestors, es);
 			planstateList = list_concat(planstateList, tmpList);
 		}
 
@@ -1992,14 +2007,20 @@ traversePlanTree(Plan *plan, PlanState *planstate, Plan *outer_plan, PlannedStmt
 									   outerPlanState(planstate),
 									   IsA(plan, BitmapHeapScan) ? outer_plan : NULL,
 									   topPlan,
-									   ancestors);
+									   ancestors,
+									   es);
 			planstateList = list_concat(planstateList, tmpList);
 		}
 
 		/* righttree */
 		if (innerPlan(plan)) {
 			ancestors = lcons(planstate, ancestors);
-			tmpList = traversePlanTree(innerPlan(plan), innerPlanState(planstate), outerPlan(plan), topPlan, ancestors);
+			tmpList = traversePlanTree(innerPlan(plan),
+										innerPlanState(planstate),
+										outerPlan(plan),
+										topPlan,
+										ancestors,
+										es);
 			planstateList = list_concat(planstateList, tmpList);
 		}
 
@@ -2010,7 +2031,10 @@ traversePlanTree(Plan *plan, PlanState *planstate, Plan *outer_plan, PlannedStmt
 				{
 					tmpList = traverseMemberNodes(((ModifyTable *) plan)->plans,
 												((ModifyTableState *) planstate)->mt_plans,
-												outer_plan, topPlan, ancestors);
+												outer_plan,
+												topPlan,
+												ancestors,
+												es);
 					planstateList = list_concat(planstateList, tmpList);
 					break;
 				}
@@ -2018,7 +2042,10 @@ traversePlanTree(Plan *plan, PlanState *planstate, Plan *outer_plan, PlannedStmt
 				{
 					tmpList = traverseMemberNodes(((Append *) plan)->appendplans,
 												((AppendState *) planstate)->appendplans,
-												outer_plan, topPlan, ancestors);
+												outer_plan,
+												topPlan,
+												ancestors,
+												es);
 					planstateList = list_concat(planstateList, tmpList);
 					break;
 				}
@@ -2026,7 +2053,10 @@ traversePlanTree(Plan *plan, PlanState *planstate, Plan *outer_plan, PlannedStmt
 				{
 					tmpList = traverseMemberNodes(((BitmapAnd *) plan)->bitmapplans,
 												((BitmapAndState *) planstate)->bitmapplans,
-												outer_plan, topPlan, ancestors);
+												outer_plan,
+												topPlan,
+												ancestors,
+												es);
 					planstateList = list_concat(planstateList, tmpList);
 					break;
 				}
@@ -2034,7 +2064,10 @@ traversePlanTree(Plan *plan, PlanState *planstate, Plan *outer_plan, PlannedStmt
 				{
 					tmpList = traverseMemberNodes(((BitmapOr *) plan)->bitmapplans,
 												((BitmapOrState *) planstate)->bitmapplans,
-												outer_plan, topPlan, ancestors);
+												outer_plan,
+												topPlan,
+												ancestors,
+												es);
 					planstateList = list_concat(planstateList, tmpList);
 					break;
 				}
@@ -2042,7 +2075,12 @@ traversePlanTree(Plan *plan, PlanState *planstate, Plan *outer_plan, PlannedStmt
 				{
 					SubqueryScan *subqueryscan = (SubqueryScan *) plan;
 					SubqueryScanState *subquerystate = (SubqueryScanState *) planstate;
-					tmpList = traversePlanTree(subqueryscan->subplan, subquerystate->subplan, NULL, topPlan, ancestors);
+					tmpList = traversePlanTree(subqueryscan->subplan,
+												subquerystate->subplan,
+												NULL,
+												topPlan,
+												ancestors,
+												es);
 					planstateList = list_concat(planstateList, tmpList);
 				}
 				break;
@@ -2054,7 +2092,10 @@ traversePlanTree(Plan *plan, PlanState *planstate, Plan *outer_plan, PlannedStmt
 		if (planstate->subPlan) //PlanState here
 		{
 			ancestors = lcons(planstate, ancestors);
-			tmpList = traverseSubPlans(planstate->subPlan, topPlan, ancestors);
+			tmpList = traverseSubPlans(planstate->subPlan,
+										topPlan,
+										ancestors,
+										es);
 			planstateList = list_concat(planstateList, tmpList);
 		}
 
@@ -2066,7 +2107,7 @@ traversePlanTree(Plan *plan, PlanState *planstate, Plan *outer_plan, PlannedStmt
  * Traverse a list of SubPlans (or initPlans, which also use SubPlan nodes).
  */
 static List*
-traverseSubPlans(List *plans, PlannedStmt *top, List *ancestors)
+traverseSubPlans(List *plans, PlannedStmt *top, List *ancestors, ExplainState *es)
 {
 	ListCell   *lst;
 	List *planstateList = NIL;
@@ -2074,7 +2115,7 @@ traverseSubPlans(List *plans, PlannedStmt *top, List *ancestors)
 	{
 		SubPlanState *sps = (SubPlanState *) lfirst(lst);
 		SubPlan    *sp = (SubPlan *) sps->xprstate.expr;
-		List *tmpList = traversePlanTree(exec_subplan_get_plan(top, sp),sps->planstate, NULL, top, ancestors);
+		List *tmpList = traversePlanTree(exec_subplan_get_plan(top, sp),sps->planstate, NULL, top, ancestors, es);
 		planstateList = list_concat(planstateList, tmpList);
 	}
 	return planstateList;
@@ -2082,7 +2123,7 @@ traverseSubPlans(List *plans, PlannedStmt *top, List *ancestors)
 
 
 static List*
-traverseMemberNodes(List *plans, PlanState **planstate, Plan *outer_plan, PlannedStmt *top, List *ancestors)
+traverseMemberNodes(List *plans, PlanState **planstate, Plan *outer_plan, PlannedStmt *top, List *ancestors, ExplainState *es)
 {
 	ListCell   *lst;
 	List *planstateList = NIL;
@@ -2090,7 +2131,7 @@ traverseMemberNodes(List *plans, PlanState **planstate, Plan *outer_plan, Planne
 	foreach(lst, plans)
 	{
 		Plan	   *subnode = (Plan *) lfirst(lst);
-		List *tmpList = traversePlanTree(subnode, planstate[j], outer_plan, top, ancestors);
+		List *tmpList = traversePlanTree(subnode, planstate[j], outer_plan, top, ancestors, es);
 		planstateList = list_concat(planstateList, tmpList);
 		j++;
 	}
@@ -2105,18 +2146,15 @@ traverseQual(List *qual, Plan *plan, Plan *outer_plan, PlannedStmt *topPlan, Pla
 	Node	   *node;
 //	char	   *exprstr;
 
+	/* Initialize ExplainState. */
 	ExplainState* es = NewExplainState();
 
-	/* Initialize ExplainState. */
-//	ExplainInitState(&es);
+	Assert(topPlan != NULL);
 
 	Bitmapset  *rels_used = NULL;
 
 	es->pstmt = topPlan;
 	es->rtable = topPlan->rtable;
-	NoDBExplainPreScanNode(planstate, &rels_used);
-	es->rtable_names = select_rtable_names_for_explain(es->rtable, rels_used);
-	es->deparse_cxt = deparse_context_for_plan_rtable(es->rtable, es->rtable_names);
 
 	/* No work if empty qual */
 	if (qual == NIL)
@@ -2124,6 +2162,10 @@ traverseQual(List *qual, Plan *plan, Plan *outer_plan, PlannedStmt *topPlan, Pla
 
 	/* Convert AND list to explicit AND */
 	node = (Node *) make_ands_explicit(qual);
+
+	ExplainPreScanNode(planstate, &rels_used);
+	es->rtable_names = select_rtable_names_for_explain(es->rtable, rels_used);
+	es->deparse_cxt = deparse_context_for_plan_rtable(es->rtable, es->rtable_names);
 
 	context = set_deparse_context_planstate(es->deparse_cxt,
 											(Node *) planstate,
@@ -2138,7 +2180,6 @@ traverseQual(List *qual, Plan *plan, Plan *outer_plan, PlannedStmt *topPlan, Pla
 	/* Deparse the expression */
 //	exprstr = deparse_expression(node, context, false, false);
 	deparse_expression(node, context, false, false);
-
 }
 
 
@@ -2151,8 +2192,8 @@ traverseQual(List *qual, Plan *plan, Plan *outer_plan, PlannedStmt *topPlan, Pla
  * This ensures that we don't confusingly assign un-suffixed aliases to RTEs
  * that never appear in the EXPLAIN output (such as inheritance parents).
  */
-static bool
-NoDBExplainPreScanNode(PlanState *planstate, Bitmapset **rels_used)
+bool
+ExplainPreScanNode(PlanState *planstate, Bitmapset **rels_used)
 {
 	Plan	   *plan = planstate->plan;
 
@@ -2191,7 +2232,7 @@ NoDBExplainPreScanNode(PlanState *planstate, Bitmapset **rels_used)
 			break;
 	}
 
-	return planstate_tree_walker(planstate, NoDBExplainPreScanNode, rels_used);
+	return planstate_tree_walker(planstate, ExplainPreScanNode, rels_used);
 }
 
 // Copied from nodeLimit.c

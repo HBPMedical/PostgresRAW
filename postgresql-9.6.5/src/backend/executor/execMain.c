@@ -92,7 +92,7 @@ USE OF THIS SOFTWARE.
 #include "noDB/NoDBScan.h"
 #include "noDB/auxiliary/NoDBTimer.h"
 
-
+#include "commands/explain.h"
 
 /* Hooks for plugins to get control in ExecutorStart/Run/Finish/End */
 ExecutorStart_hook_type ExecutorStart_hook = NULL;
@@ -374,7 +374,7 @@ standard_ExecutorRun(QueryDesc *queryDesc,
 	/*
 	 * run plan
 	 */
-	if (!ScanDirectionIsNoMovement(direction))
+	if (!ScanDirectionIsNoMovement(direction)) {
 		ExecutePlan2(estate,
 					queryDesc->plannedstmt,
 					queryDesc->planstate,
@@ -383,13 +383,21 @@ standard_ExecutorRun(QueryDesc *queryDesc,
 					count,
 					direction,
 					dest);
-//	ExecutePlan(estate,
-//				queryDesc->planstate,
-//				operation,
-//				sendTuples,
-//				count,
-//				direction,
-//				dest);
+
+//		if (execute_once && queryDesc->already_executed)
+//			elog(ERROR, "can't re-execute query flagged for single execution");
+//		queryDesc->already_executed = true;
+//
+//		ExecutePlan(estate,
+//					queryDesc->planstate,
+//					queryDesc->plannedstmt->parallelModeNeeded,
+//					operation,
+//					sendTuples,
+//					count,
+//					direction,
+//					dest,
+//					execute_once);
+	}
 
 	/*
 	 * shutdown tuple receiver, if we started it
@@ -1686,7 +1694,7 @@ ExecutePlan2(EState *estate,
 			DestReceiver *dest)
 {
 	TupleTableSlot *slot;
-	long		current_tuple_count;
+	uint64		current_tuple_count;
 	List *planstateList = NIL;
 
 	/*
@@ -1704,8 +1712,28 @@ ExecutePlan2(EState *estate,
 	{
 		bool isForNoDB = false;
 		ListCell   *cur;
+		ExplainState* es = NewExplainState();
+		Bitmapset  *rels_used = NULL;
+
+		Assert(plan != NULL);
+
+		initStringInfo(es->str);
+		es->pstmt = plan;
+		es->rtable = plan->rtable;
+		ExplainPreScanNode(planstate, &rels_used);
+
+		// TODO Temporary solution for memory context problem
+		List* temp = NIL;
+		es->rtable_names = select_rtable_names_for_explain_temp(es->rtable, rels_used, &temp);
+		es->rtable_names = list_copy(temp);
+
+		// Temporary solution for memory context problem
+		List* temp2 = NIL;
+		es->deparse_cxt = deparse_context_for_plan_rtable_temp(es->rtable, es->rtable_names, &temp2);
+		es->deparse_cxt = list_copy(temp2);
+
 		/* Get List with Scan Node inside the plan */
-		planstateList = traversePlanTree(plan->planTree, planstate, NULL, plan, NIL);
+		planstateList = traversePlanTree(plan->planTree, planstate, NULL, plan, NIL, es);
 		//Examine each ScanState from the List and call initializeRelation
 		foreach(cur, planstateList)
 		{
@@ -1773,6 +1801,7 @@ ExecutePlan2(EState *estate,
 			}
 			break;
 		}
+
 		/*
 		 * If we have a junk filter, then project a new tuple with the junk
 		 * removed.

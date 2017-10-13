@@ -156,26 +156,26 @@ ExecScan(ScanState *node,
 		 ExecScanAccessMtd accessMtd,	/* function returning a tuple */
 		 ExecScanRecheckMtd recheckMtd)
 {
-	ExprContext *econtext;
-	List	   *qual;
-	ProjectionInfo *projInfo;
-	ExprDoneCond isDone;
-	TupleTableSlot *resultSlot;
-	NoDBScanOperator_t *scanExec = node->scanOper;
-
-	/*
-	 * Fetch data from node
-	 */
-//	qual = node->ps.qual;
-	projInfo = node->ps.ps_ProjInfo;
-	econtext = node->ps.ps_ExprContext;
-
 	/*
 	 * If NoDB option is enabled then a valid configuration file is expected...
 	 */
+	NoDBScanOperator_t *scanExec = node->scanOper;
 //	if ( enable_invisible_db && ((scanExec = findScanInfo(node->ss_currentRelation->rd_rel->relname.data)) != NULL) )
 	if ( enable_invisible_db && (scanExec != NULL) )
 	{
+		ExprContext *econtext;
+//		List	   *qual;
+		ProjectionInfo *projInfo;
+		ExprDoneCond isDone;
+		TupleTableSlot *resultSlot;
+
+		/*
+		 * Fetch data from node
+		 */
+//		qual = node->ps.qual;
+		projInfo = node->ps.ps_ProjInfo;
+		econtext = node->ps.ps_ExprContext;
+
 		/*
 		 * If we have neither a qual to check nor a projection to do, just skip
 		 * all the overhead and return the raw scan tuple.
@@ -285,15 +285,24 @@ ExecScan(ScanState *node,
 	}
 	else
 	{// Original execution path (When NoDB option is disabled...)
+		ExprContext *econtext;
+		List *qual;
+		ProjectionInfo *projInfo;
+		ExprDoneCond isDone;
+		TupleTableSlot *resultSlot;
 
+		/*
+		 * Fetch data from node
+		 */
 		qual = node->ps.qual;
+		projInfo = node->ps.ps_ProjInfo;
+		econtext = node->ps.ps_ExprContext;
 
 		/*
 		 * If we have neither a qual to check nor a projection to do, just skip
 		 * all the overhead and return the raw scan tuple.
 		 */
-		if (!qual && !projInfo)
-		{
+		if (!qual && !projInfo) {
 			ResetExprContext(econtext);
 			return ExecScanFetch(node, accessMtd, recheckMtd);
 		}
@@ -303,9 +312,8 @@ ExecScan(ScanState *node,
 		 * tuple (because there is a function-returning-set in the projection
 		 * expressions).  If so, try to project another one.
 		 */
-		if (node->ps.ps_TupFromTlist)
-		{
-			Assert(projInfo);		/* can't get here if not projecting */
+		if (node->ps.ps_TupFromTlist) {
+			Assert(projInfo); /* can't get here if not projecting */
 			resultSlot = ExecProject(projInfo, &isDone);
 			if (isDone == ExprMultipleResult)
 				return resultSlot;
@@ -324,8 +332,7 @@ ExecScan(ScanState *node,
 		 * get a tuple from the access method.  Loop until we obtain a tuple that
 		 * passes the qualification.
 		 */
-		for (;;)
-		{
+		for (;;) {
 			TupleTableSlot *slot;
 
 			CHECK_FOR_INTERRUPTS();
@@ -338,8 +345,7 @@ ExecScan(ScanState *node,
 			 * being careful to use the projection result slot so it has correct
 			 * tupleDesc.
 			 */
-			if (TupIsNull(slot))
-			{
+			if (TupIsNull(slot)) {
 				if (projInfo)
 					return ExecClearTuple(projInfo->pi_slot);
 				else
@@ -358,34 +364,29 @@ ExecScan(ScanState *node,
 			 * when the qual is nil ... saves only a few cycles, but they add up
 			 * ...
 			 */
-			if (!qual || ExecQual(qual, econtext, false))
-			{
+			if (!qual || ExecQual(qual, econtext, false)) {
 				/*
 				 * Found a satisfactory scan tuple.
 				 */
-				if (projInfo)
-				{
+				if (projInfo) {
 					/*
 					 * Form a projection tuple, store it in the result tuple slot
 					 * and return it --- unless we find we can project no tuples
 					 * from this scan tuple, in which case continue scan.
 					 */
 					resultSlot = ExecProject(projInfo, &isDone);
-					if (isDone != ExprEndResult)
-					{
-						node->ps.ps_TupFromTlist = (isDone == ExprMultipleResult);
+					if (isDone != ExprEndResult) {
+						node->ps.ps_TupFromTlist =
+								(isDone == ExprMultipleResult);
 						return resultSlot;
 					}
-				}
-				else
-				{
+				} else {
 					/*
 					 * Here, we aren't projecting, so just return scan tuple.
 					 */
 					return slot;
 				}
-			}
-			else
+			} else
 				InstrCountFiltered1(node, 1);
 
 			/*

@@ -2764,6 +2764,32 @@ deparse_context_for_plan_rtable(List *rtable, List *rtable_names)
 	return list_make1(dpns);
 }
 
+List *
+deparse_context_for_plan_rtable_temp(List *rtable, List *rtable_names, List **makis)
+{
+	deparse_namespace *dpns;
+
+	dpns = (deparse_namespace *) palloc0(sizeof(deparse_namespace));
+
+	/* Initialize fields that stay the same across the whole plan tree */
+	dpns->rtable = rtable;
+	dpns->rtable_names = rtable_names;
+	dpns->ctes = NIL;
+
+	/*
+	 * Set up column name aliases.  We will get rather bogus results for join
+	 * RTEs, but that doesn't matter because plan trees don't contain any join
+	 * alias Vars.
+	 */
+	set_simple_column_names(dpns);
+
+	List* temp = list_make1(dpns);
+	*makis = list_copy(temp);
+
+	/* Return a one-deep namespace stack */
+	return temp;
+}
+
 /*
  * set_deparse_context_planstate	- Specify Plan node containing expression
  *
@@ -2809,6 +2835,25 @@ set_deparse_context_planstate(List *dpcontext,
 	return dpcontext;
 }
 
+List *
+set_deparse_context_planstate_temp(List *dpcontext,
+							  Node *planstate, List *ancestors, List** temp)
+{
+	deparse_namespace *dpns;
+
+	/* Should always have one-entry namespace list for Plan deparsing */
+	Assert(list_length(dpcontext) == 1);
+	dpns = (deparse_namespace *) linitial(dpcontext);
+
+	/* Set our attention on the specific plan node passed in */
+	set_deparse_planstate(dpns, (PlanState *) planstate);
+	dpns->ancestors = ancestors;
+
+	*temp = list_copy(dpcontext);
+
+	return dpcontext;
+}
+
 /*
  * select_rtable_names_for_explain	- Select RTE aliases for EXPLAIN
  *
@@ -2826,6 +2871,23 @@ select_rtable_names_for_explain(List *rtable, Bitmapset *rels_used)
 	dpns.ctes = NIL;
 	set_rtable_names(&dpns, NIL, rels_used);
 	/* We needn't bother computing column aliases yet */
+
+	return dpns.rtable_names;
+}
+
+List *
+select_rtable_names_for_explain_temp(List *rtable, Bitmapset *rels_used, List** temp)
+{
+	deparse_namespace dpns;
+
+	memset(&dpns, 0, sizeof(dpns));
+	dpns.rtable = rtable;
+	dpns.ctes = NIL;
+
+	set_rtable_names(&dpns, NIL, rels_used);
+	/* We needn't bother computing column aliases yet */
+
+	*temp = list_copy(dpns.rtable_names);
 
 	return dpns.rtable_names;
 }
@@ -2854,7 +2916,7 @@ set_rtable_names(deparse_namespace *dpns, List *parent_namespaces,
 	int			rtindex;
 	ListCell   *lc;
 
-	dpns->rtable_names = NIL;
+//	dpns->rtable_names = NIL;
 	/* nothing more to do if empty rtable */
 	if (dpns->rtable == NIL)
 		return;

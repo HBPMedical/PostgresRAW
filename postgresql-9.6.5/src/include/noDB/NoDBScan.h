@@ -43,6 +43,8 @@ USE OF THIS SOFTWARE.
 #include "noDB/auxiliary/NoDBPM.h"
 #include "noDB/auxiliary/NoDBTimer.h"
 
+#include "commands/explain.h"
+
 
 //#define NUMBER_OF_RELATIONS         20
 //#define MAX_RELATION_NAME           128
@@ -294,8 +296,8 @@ void                    NoDBFinalizeStrategy(NoDBScanState_t cstate);
 
 
 //TODO: move to queryDescriptor
-List *traversePlanTree(Plan *plan, PlanState *planstate, Plan *outer_plan, PlannedStmt *topPlan, List *ancestors);
-
+List *traversePlanTree(Plan *plan, PlanState *planstate, Plan *outer_plan, PlannedStmt *topPlan, List *ancestors, ExplainState *es);
+bool ExplainPreScanNode(PlanState *planstate, Bitmapset **rels_used);
 
 
 
