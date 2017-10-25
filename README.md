@@ -1,7 +1,95 @@
-# NoDB
+# NoDB - PostgresRAW
 
-EPFL NoDB code used in the HBP
-General information can be found here: http://dias.epfl.ch/nodb
+EPFL NoDB code used in the Human Brain Project ([general information](http://dias.epfl.ch/nodb)). NoDB (a.k.a PostgresRAW) extends the PostgreSQL DBMS to support queries directly on csv files.
 
-NoDB (aka PostgresRAW) extends postgresql DBMS to support queries directly on csv files.
-See HOWTO file for more information regarding the use of NoDB.
+## Building PostgresRAW
+
+To install PostgresRaw you have to follow the same steps as in PostgreSQL. This is done with the usual steps:
+
+```sh
+$ CFLAGS=-O0 ./configure --prefix=<installation_path>
+$ make
+$ make install
+```
+
+**Warning**: When building with GCC 4.8 or later, we have to disable optimisations otherwise PostgreSQL fails to run properly, which is why we have to add `-O0`.
+
+## Using PostgresRAW
+
+ 1. Initialize PostgreSQL database cluster:
+
+   ```sh
+   $ <installation_path>/bin/initdb -D <PGDATA>
+   ```
+
+ 2. Create a database:
+
+   ```sh
+   $ bin/pg_ctl start -D <PGDATA>
+   $ bin/createdb <DBNAME>
+   ```
+
+ 3. Create a table:
+
+   ```sh
+   $ bin/psql <DBNAME>
+   $ <DBNAME>=# create table [...]
+   ```
+   For more information on the `create table` syntax, please refer to the [official documentation](http://www.postgresql.org/docs/9.1/static/sql-createtable.html).
+
+For raw files, PostgresRAW assumes that the schema is known **a priori** and registered as a table. Additionally, the schema should *map* the structure of the file, as there is *no semi-structured data, nor schema discovery*.
+
+See below how to enable and configure PostgresRAW.
+
+## Configuring PostgresRAW
+
+PostgresRAW allows to access data in csv files through empty dummy tables defined in the database. 
+
+Each dummy table encodes a file's schema. When those dummy tables are queried, the data is read from the corresponding file directly (assuming the configuration further described here is completed).
+
+### 1. Enabling Raw File support
+
+The PostgreSQL configuration file `postgresql.conf` is found under `<PGDATA>`.
+
+The NoDB parameters are found at the end of this file:
+
+```
+#------------------------------------------------------------------------------
+# INVISIBLEDB OPTIONS
+#------------------------------------------------------------------------------
+conf_file                     = 'snoop.conf'
+enable_invisible_db           = on
+
+```
+
+ * **conf_file**: Name of the NoDB configuration file:
+Uncommenting this line allows the conf_file to be found and read. The conf_file should be stored under `<PGDATA>` (same folder as postgresql.conf).
+
+ * **enable\_invisible\_db**: Enable/Disable NoDB
+
+### 2. Registering files as tables
+
+The conf_file (by default `snoop.conf`) must contain the following structure for each raw text file to register :
+
+```
+filename-1 = '/home/NoDB/datafiles/load.txt'  --> Link to data file
+relation-1 = 'persons'                        --> Table name (dummy table in the database)
+delimiter-1 = ','                             --> Delimiter for the file
+```
+
+Similarly for more files...
+
+```
+filename-2 = '/home/NoDB/datafiles/load2.txt'
+relation-2 = 'persons2'
+delimiter-2 = ','
+```
+
+ * **Note 1:**
+   For each file (filename-n parameter), the corresponding table name (relation-n parameter) refers to an empty table that must be created in the database, with columns mapping exactly the data in the file. When a query is performed on the empty table, the data will be read from the file directly (if noDB is enabled).
+
+ * **Note 2:**
+   For changes in `postgresql.conf` to be applied, you have to restart the DB.
+
+ * **Note 3:**
+   For changes in `snoop.conf` to be applied, you have to restart the interactive terminal.
