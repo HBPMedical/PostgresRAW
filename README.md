@@ -37,7 +37,13 @@ $ make install
    ```
    For more information on the `create table` syntax, please refer to the [official documentation](http://www.postgresql.org/docs/9.1/static/sql-createtable.html).
 
-For raw files, PostgresRAW assumes that the schema is known **a priori** and registered as a table. Additionally, the schema should *map* the structure of the file, as there is *no semi-structured data, nor schema discovery*.
+For raw files, PostgresRAW assumes:
+ 1. that the schema is known **a priori** and registered as a table.
+ 2. the schema should *map* the structure of the file, as there is *no semi-structured data, nor schema discovery*.
+ 3. the exposed table will be used in read-only mode, no updates, insert nor delete operations.
+ 4. that modifications of the data are done directly in the file, in which case PostgresRAW will invalidate its caches as required. If the CSV layout changes, the table needs to be recreated to map to the new layout.
+
+Unless the steps presented below to register the file are taken, the table will use the regular PostgreSQL storage, and will allow all usual operations on the table, even with the RAW file access backend enabled.
 
 See below how to enable and configure PostgresRAW.
 
@@ -72,9 +78,9 @@ Uncommenting this line allows the conf_file to be found and read. The conf_file 
 The conf_file (by default `snoop.conf`) must contain the following structure for each raw text file to register :
 
 ```
-filename-1 = '/home/NoDB/datafiles/load.txt'  --> Link to data file
-relation-1 = 'persons'                        --> Table name (dummy table in the database)
-delimiter-1 = ','                             --> Delimiter for the file
+filename-1 = '/home/NoDB/datafiles/load.txt'  # Link to data file
+relation-1 = 'persons'                        # Table name (dummy table in the database)
+delimiter-1 = ','                             # Delimiter for the file
 ```
 
 Similarly for more files...
