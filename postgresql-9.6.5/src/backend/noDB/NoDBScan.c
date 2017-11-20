@@ -1,5 +1,5 @@
 /*
-                        NoDB Project 
+                        NoDB Project
         Query Processing On Raw Data Files using PostgresRAW
 
                    Copyright (c) 2011-2013
@@ -189,7 +189,7 @@ NoDBScanOperator_t *NoDBScanOperatorInit(ScanState *scanInfo)
 		sprintf(headerOption, "HEADER FALSE");
 
     sprintf(command, "COPY %s FROM '%s' WITH (FORMAT csv, %s, %s);",relation, filename, delimiterOption, headerOption);
-    fprintf(stderr,"%s\n",command);
+    //fprintf(stderr,"%s\n",command);
     /* *DP* csv mode is now selected ("FORMAT csv" parameter)
      * In csv mode, the following default values are used :
      * '' (empty string) as NULL value
@@ -2335,5 +2335,3 @@ recompute_limits(LimitState *node)
         }
     }
 }
-
-
