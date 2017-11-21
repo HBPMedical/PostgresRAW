@@ -4,7 +4,7 @@ EPFL NoDB code used in the Human Brain Project ([general information](http://dia
 
 ## Building PostgresRAW
 
-To install PostgresRaw you have to follow the same steps as in PostgreSQL. This is done with the usual steps:
+To install PostgresRAW you have to follow the same steps as in PostgreSQL. This is done with the usual steps:
 
 ```sh
 $ CFLAGS=-O0 ./configure --prefix=<installation_path>
