@@ -49,7 +49,7 @@ See below how to enable and configure PostgresRAW.
 
 ## Configuring PostgresRAW
 
-PostgresRAW allows to access data in csv files through empty dummy tables defined in the database. 
+PostgresRAW allows to access data in csv files through empty dummy tables defined in the database.
 
 Each dummy table encodes a file's schema. When those dummy tables are queried, the data is read from the corresponding file directly (assuming the configuration further described here is completed).
 
@@ -99,3 +99,6 @@ delimiter-2 = ','
 
  * **Note 3:**
    For changes in `snoop.conf` to be applied, you have to restart the interactive terminal.
+
+ * **Note 4:**
+   For maximum performance, an important action after running any query accessing a table for the first time, iis to subsequently run `ANALYZE <tablename>` where *<tablename>* is the name of the table accessed. This populates the statistics and improves the optimization in case the table is used in joins.
