@@ -299,6 +299,7 @@ void NoDBScanStateReInit(ScanState *scanInfo)
     cstate->plan->readFile = NoDBGetReadFile(cstate->plan);
 
     cstate->plan->nRows = curStrategy->nrows;
+    printf("\n=======> Number of Rows: %d", cstate->plan->nRows);
     cstate->plan->nMin = cstate->plan->nRows;
 
     //Read not only from cache
@@ -386,14 +387,12 @@ NoDBScanStateInit(NoDBScanState_t cstate, ScanState *scanInfo)
 
     //TODO:Add some policy here...
 //    cstate->writeDataCols = NoDBNothingPolicy();
-  cstate->writeDataCols = NoDBAggressiveCachePolicy(cstate->execInfo, cstate->readAllAtts);
+    cstate->writeDataCols = NoDBAggressiveCachePolicy(cstate->execInfo, cstate->readAllAtts);
 
-  cstate->writePositionCols = NoDBAggressivePMPolicy(cstate->execInfo, cstate->readAllAtts);
+    cstate->writePositionCols = NoDBAggressivePMPolicy(cstate->execInfo, cstate->readAllAtts);
 //    cstate->writePositionCols = NoDBNothingPolicy();
 
-
-    it          = NoDBScanStrategyIterator(cstate->execInfo->rel, getQueryLimit(),
-            cstate->readFilterAtts, cstate->readRestAtts, cstate->writeDataCols, cstate->writePositionCols);
+    it = NoDBScanStrategyIterator(cstate->execInfo->rel, getQueryLimit(), cstate->readFilterAtts, cstate->readRestAtts, cstate->writeDataCols, cstate->writePositionCols);
     curStrategy = NoDBScanStrategyIteratorGet(it);
 //    prettyPrint(curStrategy);
 
@@ -401,6 +400,30 @@ NoDBScanStateInit(NoDBScanState_t cstate, ScanState *scanInfo)
     cstate->ss_ScanTupleSlot = scanInfo->ss_ScanTupleSlot;
     cstate->qual             = scanInfo->ps.qual;
     cstate->econtext         = scanInfo->ps.ps_ExprContext;
+
+	/* on input just throw the header line away
+	 * *DP* For PostgresRAW : if file in actually opened only here and then read
+	 * sequentially until EOF, this should be sufficient to ignore the header line */
+	if (cstate->header_line)
+	{
+		if( !NoDBReadFromCacheOnly(cstate->plan)) {
+			if (cstate->plan->nEOL > 0) {
+				NoDBGetNextTupleFromFileWithEOL(cstate);
+				cstate->processed++;
+//				printf("%s\n", cstate->line_buf.data);
+			} else {
+				NoDBGetNextTupleFromFile(cstate);
+				cstate->processed++;
+//				printf("%s\n", cstate->line_buf.data);
+			}
+			cstate->cur_lineno++;
+		} else {
+			cstate->processed++;
+			cstate->plan->nRows--;
+			cstate->plan->nMin = cstate->plan->nRows;
+			cstate->plan->tuplesToRead = cstate->plan->nMin;
+		}
+	}
 
     if(NoDBBreakDown) {
         cstate->timer = (NoDBTimer_t*) palloc(1 * sizeof(NoDBTimer_t));
@@ -582,6 +605,7 @@ static bool  (*NoDBGetReadFile(struct NoDBPlanState_t *plan)) (NoDBScanState_t c
 //    else
     {
         pointer = (plan->nEOL > 0) ? &NoDBGetNextTupleFromFileWithEOL : &NoDBGetNextTupleFromFile;
+//        pointer = &NoDBGetNextTupleFromFile;
     }
     return pointer;
 }
@@ -1790,14 +1814,14 @@ GetScanExecStatusStmt(NoDBScanState_t cstate)
 	status.noDBerrcontext.previous = error_context_stack;
 	error_context_stack = &status.noDBerrcontext;
 
-	/* on input just throw the header line away
-	 * *DP* For PostgresRAW : if file in actually opened only here and then read
-	 * sequentially until EOF, this should be sufficient to ignore the header line */
-	if (cstate->header_line)
-	{
-		cstate->cur_lineno++;
-		NoDBCopyReadLineText(cstate);
-	}
+//	/* on input just throw the header line away
+//	 * *DP* For PostgresRAW : if file in actually opened only here and then read
+//	 * sequentially until EOF, this should be sufficient to ignore the header line */
+//	if (cstate->header_line)
+//	{
+//		cstate->cur_lineno++;
+//		NoDBCopyReadLineText(cstate);
+//	}
 
 	/*Allocate memory*/
 	cstate->values = (Datum *) palloc(status.num_phys_attrs * sizeof(Datum));
