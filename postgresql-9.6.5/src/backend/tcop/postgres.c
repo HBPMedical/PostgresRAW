@@ -3975,14 +3975,14 @@ PostgresMain(int argc, char *argv[],
     	if ( configurationExists() )
     	{
 			  loadEnvironment();
-			  fprintf(stderr,"PostgresRaw environment loaded.\n");
+			  //fprintf(stderr,"PostgresRAW environment loaded.\n");
 //			initScanModule();
     	}
     	else
     	{
-    		//fprintf(stderr,"Trying to use PostgresRaw without PostgresRaw configuration file.\n");
+		//fprintf(stderr,"Trying to use PostgresRAW without PostgresRAW configuration file.\n");
     		enable_invisible_db = false;
-    		fprintf(stderr,"PostgresRaw disabled (no configuration file).\n");
+		//fprintf(stderr,"PostgresRAW disabled (no configuration file).\n");
     	}
     }
 

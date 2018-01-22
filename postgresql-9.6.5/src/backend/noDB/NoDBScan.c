@@ -605,7 +605,6 @@ static bool  (*NoDBGetReadFile(struct NoDBPlanState_t *plan)) (NoDBScanState_t c
 //    else
     {
         pointer = (plan->nEOL > 0) ? &NoDBGetNextTupleFromFileWithEOL : &NoDBGetNextTupleFromFile;
-//        pointer = &NoDBGetNextTupleFromFile;
     }
     return pointer;
 }
