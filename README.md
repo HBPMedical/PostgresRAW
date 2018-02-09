@@ -78,9 +78,12 @@ Uncommenting this line allows the conf_file to be found and read. The conf_file 
 The conf_file (by default `snoop.conf`) must contain the following structure for each raw text file to register :
 
 ```
-filename-1 = '/home/NoDB/datafiles/load.txt'  # Link to data file
-relation-1 = 'persons'                        # Table name (dummy table in the database)
-delimiter-1 = ','                             # Delimiter for the file
+# Link to data file
+filename-1 = '/home/NoDB/datafiles/load.txt'
+# Table name (dummy table in the database)
+relation-1 = 'persons'
+# Delimiter for the file
+delimiter-1 = ','
 ```
 
 Similarly for more files...
@@ -102,3 +105,5 @@ delimiter-2 = ','
 
  * **Note 4:**
    For maximum performance, an important action after running any query accessing a table for the first time, iis to subsequently run `ANALYZE <tablename>` where *<tablename>* is the name of the table accessed. This populates the statistics and improves the optimization in case the table is used in joins.
+ * **Note 5:**
+   For now only full line comments are supported, in other words line which start with `#`.
