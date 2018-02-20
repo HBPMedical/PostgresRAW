@@ -3494,6 +3494,48 @@ RewriteQuery(Query *parsetree, List *rewrite_events)
 }
 
 
+void AddQueryCorrectColumns(Query* query) {
+	if (query != NULL) {
+		AddRangeTBLCorrectColumns(query->rtable);
+	}
+}
+
+void addAliasCorrectColumn(Alias* alias) {
+	if (alias != NULL) {
+
+		ListCell *tableCell;
+		foreach(tableCell, alias->colnames)
+		{
+			char *columname = (char*) lfirst(tableCell);
+
+			addColumnInformation(columname, NULL, NULL, NULL, true);
+
+		}
+	}
+}
+
+void AddRangeTBLCorrectColumns(List* rtable) {
+
+	if (rtable != NULL) {
+
+		ListCell *tableCell;
+
+		foreach(tableCell, rtable)
+		{
+			// find ranges
+			RangeTblEntry * subrtable = (RangeTblEntry*) lfirst(tableCell);
+
+			// subquery
+			Query *subquery = (Query *) subrtable->subquery;
+			AddQueryCorrectColumns(subquery);
+
+			// check Alias
+			Alias *alias = (Alias*) subrtable->eref;
+			addAliasCorrectColumn(alias);
+		}
+	}
+}
+
 /*
  * QueryRewrite -
  *	  Primary entry point to the query rewriter.
@@ -3537,9 +3579,12 @@ QueryRewrite(Query *parsetree)
 	results = NIL;
 	foreach(l, querylist)
 	{
-		Query	   *query = (Query *) lfirst(l);
+		Query *query = (Query *) lfirst(l);
 
 		query = fireRIRrules(query, NIL, false);
+
+		// adding columns corresponding to view
+		AddQueryCorrectColumns(query);
 
 		query->queryId = input_query_id;
 
