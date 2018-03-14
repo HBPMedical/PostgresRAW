@@ -372,6 +372,7 @@ ExecStoreTuple(HeapTuple tuple,
 			IncrBufferRefCount(buffer);
 	}
 
+//	print_slot(slot);
 	return slot;
 }
 
@@ -500,6 +501,7 @@ ExecStoreVirtualTuple(TupleTableSlot *slot)
 	slot->tts_isempty = false;
 	slot->tts_nvalid = slot->tts_tupleDescriptor->natts;
 
+//	print_slot(slot);
 	return slot;
 }
 
