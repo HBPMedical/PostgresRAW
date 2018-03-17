@@ -112,6 +112,7 @@ typedef struct NoDBScanStateData_t
 
 	bool        csv_mode;               /* Comma Separated Value format? */
 	bool        header_line;            /* CSV header line? */
+	bool		read_header;			/* Denote that the header has been read */
 
 	char        *null_print;            /* NULL marker string (server encoding!) */
 	int         null_print_len;         /* length of same */

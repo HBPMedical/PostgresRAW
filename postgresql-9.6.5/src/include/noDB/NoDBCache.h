@@ -74,6 +74,8 @@ typedef struct NoDBCache_t {
     NoDBRowPartition_t          *list;          // List with memory usage per tuple.
 
     char                        *buf;           // Buffer.
+
+    unsigned int sizeOfHeader;						// Size of header in bytes (if one exists)
 } NoDBCache_t;
 
 

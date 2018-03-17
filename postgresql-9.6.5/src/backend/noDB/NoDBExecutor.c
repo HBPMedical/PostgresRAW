@@ -730,11 +730,37 @@ NoDBCopyGetData(NoDBScanState_t cstate, void *databuf, int minread, int maxread)
 	switch (cstate->copy_dest)
 	{
 		case COPY_FILE:
-			bytesread = fread(databuf, 1, maxread, cstate->copy_file);
-			if (ferror(cstate->copy_file))
-				ereport(ERROR,
-						(errcode_for_file_access(),
-						 errmsg("could not read from COPY file: %m")));
+			if (cstate->header_line && !cstate->read_header) {
+				char* temp = (char*) malloc(maxread * sizeof(char));
+
+				bytesread = fread(temp, 1, maxread, cstate->copy_file);
+
+				if (bytesread == 0) {
+					return bytesread;
+				}
+
+				if (ferror(cstate->copy_file))
+					ereport(ERROR, (errcode_for_file_access(), errmsg("could not read from COPY file: %m")));
+
+				int i = 0;
+				for (;;) {
+					char c = temp[i++];
+					if (c == '\n') {
+						break;
+					}
+				}
+				NoDBCacheSetHeaderSize(cstate->plan->eolCache, i);
+				fseek(cstate->copy_file, i, SEEK_SET);
+				bytesread = fread(databuf, 1, maxread, cstate->copy_file);
+				cstate->read_header = true;
+
+				free(temp);
+			} else {
+				bytesread = fread(databuf, 1, maxread, cstate->copy_file);
+
+				if (ferror(cstate->copy_file))
+					ereport(ERROR, (errcode_for_file_access(), errmsg("could not read from COPY file: %m")));
+			}
 			break;
 //		case COPY_OLD_FE:
 //			break;
@@ -1590,6 +1616,15 @@ NoDBCopyReadLineTextWithEOL(NoDBScanState_t cstate)
 	/*Go to file and read tuples!*/
 	if (cstate->tupleStored == 0)
 	{
+		if (cstate->header_line && !cstate->read_header) {
+			int inbytes = 0;
+
+			unsigned int headerSize = NoDBCacheGetHeaderSize(cstate->plan->eolCache);
+//			fseek (cstate->copy_file , headerSize, SEEK_SET);
+			inbytes = fread(cstate->raw_buf, 1, headerSize, cstate->copy_file);
+			cstate->read_header = true;
+		}
+
 		int stored = 0;
 		int inbytes, toRead = 0;
 		Assert(cstate->raw_buf_index >= cstate->raw_buf_len);

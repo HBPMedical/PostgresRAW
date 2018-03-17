@@ -30,7 +30,6 @@ bool NoDBGetNextTupleFromFileWithEOL(NoDBScanState_t cstate);
 bool NoDBTryReFillRawBuf(NoDBScanState_t cstate);
 bool NoDBCopyReadLineText(NoDBScanState_t cstate);
 
-
 #endif /* NODBEXECUTOR_H_ */
 
 

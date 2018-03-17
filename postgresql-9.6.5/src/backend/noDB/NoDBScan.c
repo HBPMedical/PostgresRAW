@@ -230,6 +230,11 @@ void NoDBScanStateReInit(ScanState *scanInfo)
             if ( (NoDBCacheGetBegin(cstate->plan->eolCache) + NoDBCacheGetUsedRows(cstate->plan->eolCache)) >=  cstate->processed )
             {
                 long int bytes = NoDBComputeBytesToSeek(cstate->plan->eolCache, cstate->tupleRead, cstate->processed);
+
+                if ((cstate->header_line && cstate->read_header) || (cstate->header_line && NoDBCacheGetHeaderSize(cstate->plan->eolCache)>0) ) {
+                	bytes += NoDBCacheGetHeaderSize(cstate->plan->eolCache);
+                }
+
                 fseek(cstate->copy_file, bytes, SEEK_CUR);
                 cstate->raw_buf_len = 0;
                 cstate->raw_buf_index = 0;
@@ -257,6 +262,7 @@ void NoDBScanStateReInit(ScanState *scanInfo)
 		 fseek(cstate->copy_file, 0, SEEK_SET);
 	}
 
+	cstate->read_header = false;
 	cstate->processed = 0;
 	cstate->tupleRead = 0;
 	cstate->tupleStored = 0;
@@ -299,7 +305,6 @@ void NoDBScanStateReInit(ScanState *scanInfo)
     cstate->plan->readFile = NoDBGetReadFile(cstate->plan);
 
     cstate->plan->nRows = curStrategy->nrows;
-    printf("\n=======> Number of Rows: %d", cstate->plan->nRows);
     cstate->plan->nMin = cstate->plan->nRows;
 
     //Read not only from cache
@@ -401,30 +406,6 @@ NoDBScanStateInit(NoDBScanState_t cstate, ScanState *scanInfo)
     cstate->qual             = scanInfo->ps.qual;
     cstate->econtext         = scanInfo->ps.ps_ExprContext;
 
-	/* on input just throw the header line away
-	 * *DP* For PostgresRAW : if file in actually opened only here and then read
-	 * sequentially until EOF, this should be sufficient to ignore the header line */
-	if (cstate->header_line)
-	{
-		if( !NoDBReadFromCacheOnly(cstate->plan)) {
-			if (cstate->plan->nEOL > 0) {
-				NoDBGetNextTupleFromFileWithEOL(cstate);
-				cstate->processed++;
-//				printf("%s\n", cstate->line_buf.data);
-			} else {
-				NoDBGetNextTupleFromFile(cstate);
-				cstate->processed++;
-//				printf("%s\n", cstate->line_buf.data);
-			}
-			cstate->cur_lineno++;
-		} else {
-			cstate->processed++;
-			cstate->plan->nRows--;
-			cstate->plan->nMin = cstate->plan->nRows;
-			cstate->plan->tuplesToRead = cstate->plan->nMin;
-		}
-	}
-
     if(NoDBBreakDown) {
         cstate->timer = (NoDBTimer_t*) palloc(1 * sizeof(NoDBTimer_t));
         NoDBTimerSetZero(cstate->timer);
@@ -497,6 +478,11 @@ void NoDBUpdateStrategy(NoDBScanState_t cstate)
             if ( (NoDBCacheGetBegin(plan->eolCache) + NoDBCacheGetUsedRows(plan->eolCache)) >=  cstate->processed )
             {
                 long int bytes = NoDBComputeBytesToSeek(plan->eolCache, cstate->tupleRead, cstate->processed);
+
+                if ((cstate->header_line && cstate->read_header) || ((cstate->header_line && NoDBCacheGetHeaderSize(cstate->plan->eolCache) > 0))) {
+                	bytes += NoDBCacheGetHeaderSize(cstate->plan->eolCache);
+                }
+
                 fseek(cstate->copy_file, bytes, SEEK_CUR);
                 cstate->raw_buf_len = 0;
                 cstate->raw_buf_index = 0;
@@ -839,6 +825,7 @@ GetScanState(const CopyStmt *stmt, const char *queryString)
 						(errcode(ERRCODE_SYNTAX_ERROR),
 						 errmsg("conflicting or redundant options")));
 			cstate->header_line = defGetBoolean(defel);
+			cstate->read_header = false;
 		}
 		else if (strcmp(defel->defname, "quote") == 0)
 		{
@@ -963,10 +950,12 @@ GetScanState(const CopyStmt *stmt, const char *queryString)
 
 	/* Check header */
 	if (!cstate->csv_mode && cstate->header_line)
-	if (cstate->header_line)
+	if (cstate->header_line) {
 		ereport(ERROR,
 				(errcode(ERRCODE_FEATURE_NOT_SUPPORTED),
 				 errmsg("COPY HEADER available only in CSV mode")));
+		cstate->read_header = false;
+	}
 
 	/* Check quote */
 	if (!cstate->csv_mode && cstate->quote != NULL)
@@ -1239,6 +1228,7 @@ GetScanState(const CopyStmt *stmt, const char *queryString)
 	cstate->raw_buf = (char *) palloc(RAW_BUF_SIZE + 1);
 	cstate->raw_buf_index = cstate->raw_buf_len = 0;
 	cstate->processed = 0;
+	cstate->read_header = false;
 	cstate->tupleRead = 0;
 
 	/*

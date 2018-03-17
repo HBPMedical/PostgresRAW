@@ -283,6 +283,16 @@ void NoDBCacheSetUsedRows(NoDBCache_t *cache, NoDBRow_t usedRows)
     cache->usedRows = usedRows;
 }
 
+NoDBRow_t NoDBCacheGetHeaderSize(NoDBCache_t *cache)
+{
+    return cache->sizeOfHeader;
+}
+
+void NoDBCacheSetHeaderSize(NoDBCache_t *cache, NoDBRow_t headerSize)
+{
+    cache->sizeOfHeader = headerSize;
+}
+
 NoDBRow_t NoDBCacheGetMaxRows(NoDBCache_t *cache)
 {
     return cache->nRows;
