@@ -194,12 +194,28 @@ void addColumnInformation(char* columnName, char* tableName, char* schemaName, c
 			InsertToArray(&NoDBQueryDesc.orderByList, &columnDesc);
 			break;
 		case PS_whereList:
+			// FIX for filtering on the correct table for NoDB
+			if (columnDesc.tableName != NULL) {
+				char* tablename = getTableNameFromAlias(columnDesc.tableName);
+				if (tablename != NULL) {
+					columnDesc.tableName = (char*) malloc(strlen(tablename)+1);
+					strcpy(columnDesc.tableName, tablename);
+				}
+			}
 			InsertToArray(&NoDBQueryDesc.whereList, &columnDesc);
 			break;
 		case PS_havingList:
 			InsertToArray(&NoDBQueryDesc.havingList, &columnDesc);
 			break;
 		case PS_filterList:
+			// FIX for filtering on the correct table for NoDB
+			if (columnDesc.tableName != NULL) {
+				char* tablename = getTableNameFromAlias(columnDesc.tableName);
+				if (tablename != NULL) {
+					columnDesc.tableName = (char*) malloc(strlen(tablename)+1);
+					strcpy(columnDesc.tableName, tablename);
+				}
+			}
 			InsertToArray(&NoDBQueryDesc.filterList, &columnDesc);
 			break;
 		default:
@@ -214,6 +230,9 @@ void addColumnInformation(char* columnName, char* tableName, char* schemaName, c
 void
 addTableAliasInformation(char* tableName, char* alias)
 {
+
+	printf("==================================> %s : %s\n", tableName, alias);
+
 	int i;
 	int pos;
 
