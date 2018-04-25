@@ -11,7 +11,7 @@ $ CFLAGS=-O0 ./configure --prefix=<installation_path>
 $ make
 $ make install
 ```
-
+**Warning**: The PostgresRAW installation directory must use NO symbolic links. Otherwise, PostgresRAW fails to recognize the relative position of configuration files.
 **Warning**: When building with GCC 4.8 or later, we have to disable optimisations otherwise PostgreSQL fails to run properly, which is why we have to add `-O0`.
 
 ## Using PostgresRAW
